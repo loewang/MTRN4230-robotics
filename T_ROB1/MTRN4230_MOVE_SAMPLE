@@ -1,6 +1,6 @@
 MODULE MTRN4230_Move_Sample
     
-    PERS string args{5};
+    PERS string ROBargs{8};
     PERS bool flag;
     
     ! The Main procedure. When you select 'PP to Main' on the FlexPendant, it will go to this procedure.
@@ -14,21 +14,21 @@ MODULE MTRN4230_Move_Sample
         MoveToCalibPos;
         
         ! Call a procedure that we have defined below.
-        !MoveJSample;
+        MoveJSample;
         
         ! Call another procedure that we have defined.
         !MoveLSample;
         
         ! Call another procedure, but provide some input arguments.
-        WHILE flag = FALSE DO
-            IF args{1} = "MVPOS" THEN
-                ok := StrToVal(args{2}, coord.x);
-                ok := StrToVal(args{3}, coord.y);
-                ok := StrToVal(args{4}, coord.z);
+        WaitUntil flag = TRUE;
+        
+            IF ROBargs{1} = "MVPOS" THEN
+                ok := StrToVal(ROBargs{2}, coord.x);
+                ok := StrToVal(ROBargs{3}, coord.y);
+                ok := StrToVal(ROBargs{4}, coord.z);
                 VariableSample pTableHome, coord.x, coord.y, coord.z, v100, fine;
             ENDIF
-            
-        ENDWHILE
+                
         flag := FALSE;
     ENDPROC
     
