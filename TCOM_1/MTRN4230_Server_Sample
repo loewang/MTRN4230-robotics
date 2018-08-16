@@ -2,19 +2,20 @@ MODULE MTRN4230_Server_Sample
 
     ! The socket connected to the client.
     VAR socketdev client_socket;
-    PERS string args{5};
+    VAR string args{8};
+    PERS string ROBargs{8};
     PERS bool flag := FALSE;
     ! The host and port that we will be listening for a connection on.
     !PERS string host := "192.168.125.1";
-    CONST string host := "127.0.0.1";
+    VAR string host := "127.0.0.1";
     CONST num port := 1025;
     
     PROC Main ()
-        !IF RobOS() THEN
-        !    host := "192.168.125.1";
-        !ELSE
-        !    host := "127.0.0.1";
-        !ENDIF
+        IF RobOS() THEN
+            host := "192.168.125.1";
+        ELSE
+            host := "127.0.0.1";
+        ENDIF
         MainServer;
         
     ENDPROC
@@ -28,8 +29,11 @@ MODULE MTRN4230_Server_Sample
         
         VAR num counter;
         VAR bool ok;
+        VAR num set;
         
         ListenForAndAcceptConnection;
+        
+        WHILE TRUE DO        
             
         ! Receive a string from the client.
         SocketReceive client_socket \Str:=received_str;
@@ -37,35 +41,97 @@ MODULE MTRN4230_Server_Sample
         ! Receive command, should be 5 chars long
         args{1} := StrPart(received_str,1,5);
         
-        ! Start going through received arguments, separated by commas
-        comma_pos_1 := 6;
-        comma_pos_2:= StrFind(received_str,comma_pos_1+1,",");
+        IF StrLen(received_str) > 7 THEN
         
-        counter := 2;
-        
-        ! Loop while a comma is detected i.e. while we're not on the last argument
-        WHILE comma_pos_2 <> StrLen(received_str)+1 DO
-        
-            !ok := StrToVal(StrPart(received_str,comma_pos_1+1,comma_pos_2-(comma_pos_1+1)), args{counter});
-            args{counter} := StrPart(received_str,comma_pos_1+1,comma_pos_2-(comma_pos_1+1));
-            comma_pos_1 := comma_pos_2;
+            ! Start going through received arguments, separated by commas
+            comma_pos_1 := 6;
             comma_pos_2:= StrFind(received_str,comma_pos_1+1,",");
-            counter := counter + 1;
             
-        ENDWHILE
+            counter := 2;
+            
+            ! Loop while a comma is detected i.e. while we're not on the last argument
+            WHILE comma_pos_2 <> StrLen(received_str)+1 DO
+            
+                !ok := StrToVal(StrPart(received_str,comma_pos_1+1,comma_pos_2-(comma_pos_1+1)), args{counter});
+                args{counter} := StrPart(received_str,comma_pos_1+1,comma_pos_2-(comma_pos_1+1));
+                comma_pos_1 := comma_pos_2;
+                comma_pos_2:= StrFind(received_str,comma_pos_1+1,",");
+                counter := counter + 1;
+                
+            ENDWHILE
+            
+            ! Save last argument
+            args{counter} := StrPart(received_str,comma_pos_1+1,StrLen(received_str)-comma_pos_1);
+            
+            ! To avoid Robot movement commands being overwritten, we copy into the PERS ROBarg array
+            ROBargs := args;
+            
+            ! Tells the Robot that a new movement command has been sent
+            flag := TRUE;
+            
+        ENDIF
+ 
         
-        ! Save last argument
-        args{counter} := StrPart(received_str,comma_pos_1+1,StrLen(received_str)-comma_pos_1);
-        flag := TRUE;
+        TEST args{1}
+        CASE "VACON" :
+            TurnVacOn;
+            
+        CASE "VACOF" :
+            TurnVacOff;
+            
+        CASE "SETSL" :
+            ok := StrToVal(args{2}, set);
+            SetVacSol(set);
+            
+        CASE "CONON" :
+            TurnConOnSafely;
+            
+        CASE "CONOF" :
+            TurnConOff;
+            
+        CASE "CONDR" :
+            ok := StrToVal(args{2}, set);
+            SetConDir(set);
+            
+        DEFAULT :
+            
+        ENDTEST
+        
 
         ! Send the string back to the client, adding a line feed character.
-        SocketSend client_socket \Str:=(args{1} + args{2} + args{3} + "\0A");
+        !SocketSend client_socket \Str:=(args{1} + args{2} + args{3} + "\0A");
         
+        ENDWHILE
 
         CloseConnection;
+        
+        ERROR
+            IF ERRNO=ERR_SOCK_TIMEOUT THEN
+                RETRY;
+            ELSEIF ERRNO=ERR_SOCK_CLOSED THEN
+                client_recover;
+                RETRY;
+            ELSE
+                ! No error recovery handling
+            ENDIF
 		
     ENDPROC
-
+    
+    PROC client_recover()
+        SocketClose client_socket;
+        SocketCreate client_socket;
+        SocketConnect client_socket, host, port;
+        
+        ERROR
+            IF ERRNO=ERR_SOCK_TIMEOUT THEN
+                RETRY;
+            ELSEIF ERRNO=ERR_SOCK_CLOSED THEN
+                RETURN;
+            ELSE
+            ! No error recovery handling
+            ENDIF
+    ENDPROC
+    
     PROC ListenForAndAcceptConnection()
         
         ! Create the socket to listen for a connection on.
