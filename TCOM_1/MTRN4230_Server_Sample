@@ -1,16 +1,14 @@
 MODULE MTRN4230_Server_Sample    
 
-    ! The socket connected to the client.
-    VAR socketdev client_socket;
-    VAR string args{8};
-    PERS string ROBargs{8};
-    PERS bool flag;
-    PERS string errmsg;
-    PERS string jointAngles;
-    PERS string eePos;
-    PERS string eeOri;
-    ! The host and port that we will be listening for a connection on.
-    !PERS string host := "192.168.125.1";
+    VAR socketdev client_socket; ! Used to communicate with MATLAB
+    VAR string args{8}; ! Used to contain the commands and variables sent from MATLAB
+    PERS string ROBargs{8}; ! Movement commands are copied and accessible by Move_Sample
+    PERS bool flag; ! Flag is set to TRUE when a command is received
+    PERS string errmsg; ! Used to contain any error messages caught in Move_Sample
+    PERS string jointAngles; ! Contains current joint angles
+    PERS string eePos; ! Contains current end effector position
+    PERS string eeOri; ! Contains current end effector orientation
+    
     VAR string host := "127.0.0.1";
     CONST num port := 1025;
     
@@ -26,122 +24,119 @@ MODULE MTRN4230_Server_Sample
 
     PROC MainServer()
         
-        VAR string received_str;
+        VAR string received_str; ! Stores command and variable string sent from MATLAB
         
-        VAR num comma_pos_1;
-        VAR num comma_pos_2;
-        VAR num command_len := 8;
+        VAR num comma_pos_1; ! Keeps track of the position before the argument
+        VAR num comma_pos_2; ! Keeps track of the position after the argument
+        VAR num command_len := 8; ! Commands are 8 characters long
         
-        VAR num counter;
-        VAR bool ok;
-        VAR num set;
+        VAR num counter; ! Keeps track of the argument number
+        VAR bool ok; ! Bool variable just for StrToVal
+        VAR num set; ! For setting values for I/Os
         
-        flag:= FALSE;
+        flag:= FALSE; ! Initialise the flag to be false
         
-        ListenForAndAcceptConnection;
+        ListenForAndAcceptConnection; ! Connect with MATLAB       
         
         WHILE TRUE DO
             
+        ! Display error message if there is one    
         IF errmsg <> "" THEN
             SocketSend client_socket \Str:=(errmsg+ "\0A");
-            errmsg := "";
+            errmsg := ""; ! Clear error message after being displayed
         ENDIF
             
-        ! Receive a string from the client.
+        ! Receive command string from the MATLAB
         SocketReceive client_socket \Str:=received_str;
         
-        ! Receive command, should be 5 chars long
-        args{1} := StrPart(received_str,1,command_len);
+        ! Begin splitting string into individual command and arguments
+        args{1} := StrPart(received_str,1,command_len); 
         
         IF StrLen(received_str) > command_len THEN
         
             ! Start going through received arguments, separated by commas
             comma_pos_1 := command_len+1;
-            comma_pos_2:= StrFind(received_str,comma_pos_1+1,",");
+            comma_pos_2:= StrFind(received_str,comma_pos_1+1,","); ! Find the first comma
             
-            counter := 2;
+            counter := 2; ! First argument goes into second position of args array
             
-            ! Loop while a comma is detected i.e. while we're not on the last argument
+            ! Loop while a comma is detected i.e. while not on last argument
             WHILE comma_pos_2 <> StrLen(received_str)+1 DO
             
-                !ok := StrToVal(StrPart(received_str,comma_pos_1+1,comma_pos_2-(comma_pos_1+1)), args{counter});
-                args{counter} := StrPart(received_str,comma_pos_1+1,comma_pos_2-(comma_pos_1+1));
-                comma_pos_1 := comma_pos_2;
-                comma_pos_2:= StrFind(received_str,comma_pos_1+1,",");
-                counter := counter + 1;
+                args{counter} := StrPart(received_str,comma_pos_1+1,comma_pos_2-(comma_pos_1+1)); ! Copy the argument
+                comma_pos_1 := comma_pos_2; ! Update starting argument position
+                comma_pos_2:= StrFind(received_str,comma_pos_1+1,","); ! Find the next comma
+                counter := counter + 1; ! Increment counter
                 
             ENDWHILE
             
             ! Save last argument
             args{counter} := StrPart(received_str,comma_pos_1+1,StrLen(received_str)-comma_pos_1);
             
-            ! To avoid Robot movement commands being overwritten, we copy into the PERS ROBarg array
+            ! To avoid movement commands being overwritten by server commands, we copy into the ROBarg array
             ROBargs := args;
             
-            ! Tells the Robot that a new movement command has been sent
+            ! Set flag to TRUE to indicate the command has been received
             flag := TRUE;
             
         ENDIF
  
+        ! Server Commands - I/O Setting, Status Display
         
         TEST args{1}
-        CASE "VACUUMON" :
+        CASE "VACUUMON" : ! VacRun set to 1
             TurnVacOn;
             TPWrite "Vacuum On";
             
-        CASE "VACUUMOF" :
+        CASE "VACUUMOF" : ! VacRun set to 0
             TurnVacOff;
             TPWrite "Vacuum Off";
             
-        CASE "SETSOLEN" :
+        CASE "SETSOLEN" : ! VacSol set to specified value 
             ok := StrToVal(args{2}, set);
             SetVacSol(set);
             TPWrite ("Vacuum Solenoid " + args{2});
             
-        CASE "CONVEYON" :
+        CASE "CONVEYON" : ! ConRun set to 1, only if ConStat is 1
             TurnConOnSafely;
             TPWrite "Conveyor On";
 
-        CASE "CONVEYOF" :
-            TurnConOff;
+        CASE "CONVEYOF" : ! ConRun set to 0
+            TurnConOff; 
             TPWrite "Conveyor Off";
             
-        CASE "CONVDIRE" :
+        CASE "CONVDIRE" : ! ConDir set to specified value
             ok := StrToVal(args{2}, set);
             SetConDir(set);
             TPWrite ("Conveyor Direction " + args{2});
             
-        CASE "ROBPAUSE" :
+        CASE "ROBPAUSE" : ! Pauses current motion task
             StopMove;
             TPWrite "Robot Motion Paused";
             
-        CASE "ROBRESME" :
+        CASE "ROBRESME" : ! Resumes previous motion task
             StartMove;
             TPWrite "Robot Motion Resumed";
             
-        CASE "ROBCANCL" :
+        CASE "ROBCANCL" : ! Cancels previous motion task
             StopMoveReset;
             SETDO DO10_1, 1;
             TPWrite "Robot Motion Cancelled";     
             
-        CASE "JNTANGLE" :
-            SocketSend client_socket \Str:=jointAngles;
+        CASE "JNTANGLE" : ! Send joint angles to MATLAB
+            SocketSend client_socket \Str:=jointAngles+"\0A";
             
-        CASE "EEPOSITN" :
-            SocketSend client_socket \Str:=eePos;
+        CASE "EEPOSITN" : ! Send end effector position to MATLAB
+            SocketSend client_socket \Str:=eePos+"\0A";
             
-        CASE "EEORIENT" :
-            SocketSend client_socket \Str:=eeOri;
+        CASE "EEORIENT" : ! Send end effector orientation to MATLAB
+            SocketSend client_socket \Str:=eeOri+"\0A";
             
-        DEFAULT :
+        DEFAULT : ! None
             
         ENDTEST
         
-
-        ! Send the string back to the client, adding a line feed character.
-        !SocketSend client_socket \Str:=(args{1} + args{2} + args{3} + "\0A");
-        
-        ENDWHILE
+    ENDWHILE
 
         CloseConnection;
         
