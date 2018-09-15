@@ -1,37 +1,281 @@
 MODULE MTRN4230_Move_Sample
     
+    PERS string errmsg;
     PERS string ROBargs{8};
     PERS bool flag;
+    PERS bool quit;
+    PERS string jointAngles;
+    PERS string eePos;
+    PERS string eeOri;
+    VAR intnum cancel;
     
     ! The Main procedure. When you select 'PP to Main' on the FlexPendant, it will go to this procedure.
-    PROC MainMove()
-        
-        VAR bool ok;
-        VAR pos coord;
+    PROC Initialise()
+        SETDO DO10_1, 0;
+        StartMove;
+        CONNECT cancel WITH cancelTrap;
+        ISignalDO DO10_1, 1, cancel;
+    ENDPROC
+    
+    PROC Main()
                
         ! This is a procedure defined in a System Module, so you will have access to it.
         ! This will move the robot to its calibration.
-        MoveToCalibPos;
+        !MoveToCalibPos;
         
+        Initialise;
         ! Call a procedure that we have defined below.
         MoveJSample;
         
         ! Call another procedure that we have defined.
         !MoveLSample;
         
-        ! Call another procedure, but provide some input arguments.
-        WaitUntil flag = TRUE;
+        ReceiveCommandLoop;
         
-            IF ROBargs{1} = "MVPOS" THEN
+        ! Call another procedure, but provide some input arguments.
+
+    ENDPROC
+    
+    PROC ReceiveCommandLoop()
+        
+        VAR bool ok;
+        VAR pos coord;
+        VAR robjoint pose;
+        VAR jointtarget jtarg;
+        VAR jointtarget jcurr;
+        VAR speeddata sspeed := v100;
+        VAR num joint;
+        VAR num jogdir;
+        VAR orient quat;
+        VAR orient qcurr;
+        VAR robtarget rcurr;
+        VAR robtarget rtarg;
+        VAR speeddata vlowjog := [1000, 1, 5000, 1000];
+        VAR speeddata vmedjog := [1000, 3, 5000, 1000];
+        VAR speeddata vhighjog := [1000, 10, 5000, 1000];
+        VAR num myerr;
+        VAR string outputMsg;
+        
+        
+        restart:
+        
+        jcurr := CJointT();
+        jointAngles := ValToStr(jcurr.robax);
+        rcurr := CRobT();
+        eePos := ValToStr(rcurr.trans);
+        eeOri := ValToStr(rcurr.rot);
+        
+        WaitUntil flag = TRUE;
+            flag := FALSE;          
+            
+            TEST ROBargs{1}
+            
+            CASE "MVPOSTAB":
                 ok := StrToVal(ROBargs{2}, coord.x);
                 ok := StrToVal(ROBargs{3}, coord.y);
                 ok := StrToVal(ROBargs{4}, coord.z);
-                VariableSample pTableHome, coord.x, coord.y, coord.z, v100, fine;
-            ENDIF
                 
-        flag := FALSE;
+                jtarg := CalcJointT(Offs(pTableHome, coord.x, coord.y, coord.z),tSCup \ErrorNumber:=myerr);
+                IF myerr = ERR_ROBLIMIT THEN
+                    errmsg := "out of reach";
+                ELSE
+                    VariableSample pTableHome, coord.x, coord.y, coord.z, sspeed, fine;
+                    outputMsg := ("Moving to: " + ValToStr(coord) + "\0A");
+                    TPWrite outputMsg;
+                    
+                    !MoveAbsJ jtarg,sspeed,fine,tSCup;
+                ENDIF
+                
+
+            CASE "MVPOSCON":
+                ok := StrToVal(ROBargs{2}, coord.x);
+                ok := StrToVal(ROBargs{3}, coord.y);
+                ok := StrToVal(ROBargs{4}, coord.z);
+                VariableSample pConvHome, coord.x, coord.y, coord.z, sspeed, fine;
+                outputMsg := ("Moving to: " + ValToStr(coord) + "\0A");
+                TPWrite outputMsg;
+                
+            CASE "SETPOSES":
+                ok := StrToVal(ROBargs{2}, pose.rax_1);
+                ok := StrToVal(ROBargs{3}, pose.rax_2);
+                ok := StrToVal(ROBargs{4}, pose.rax_3);
+                ok := StrToVal(ROBargs{5}, pose.rax_4);
+                ok := StrToVal(ROBargs{6}, pose.rax_5);
+                ok := StrToVal(ROBargs{7}, pose.rax_6);
+                
+                jtarg.robax := pose;
+                jtarg.extax := [0, 9E9, 9E9, 9E9, 9E9, 9E9];
+                
+                MoveAbsJ jtarg, sspeed, fine, tSCup;
+                outputMsg := ("Setting axes angles to: " + ValToStr(pose) + "\0A");
+                TPWrite outputMsg;
+                
+            CASE "SETSPEED":
+                !ok := StrToVal(ROBargs{2}, sspeed);
+                TEST ROBargs{2}
+                
+                CASE "v10":
+                    sspeed := v10;
+                
+                CASE "v50":
+                    sspeed := v50;
+                
+                CASE "v100":
+                    sspeed := v100;
+                    
+                CASE "v200":
+                    sspeed := v200;
+                    
+                CASE "v500":
+                    sspeed := v500;
+                
+                ENDTEST
+                
+                outputMsg := ("Speed set to: " + ValToStr(sspeed) + "\0A");
+                TPWrite outputMsg;
+                
+            CASE "JOGJOINT":
+                ok := StrToVal(ROBargs{2}, joint);
+                
+                IF ROBargs{3} = "pos" THEN
+                    jogdir := sspeed.v_tcp/10;
+                ELSE
+                    jogdir := -sspeed.v_tcp/10;
+                ENDIF
+                    
+                jcurr := CJointT();
+                jtarg := jcurr;
+                
+                TEST joint
+                
+                CASE 1:
+                jtarg.robax.rax_1 := jcurr.robax.rax_1 + jogdir;
+                
+                CASE 2:
+                jtarg.robax.rax_2 := jcurr.robax.rax_2 + jogdir;
+                
+                CASE 3:
+                jtarg.robax.rax_3 := jcurr.robax.rax_3 + jogdir;
+                
+                CASE 4:
+                jtarg.robax.rax_4 := jcurr.robax.rax_4 + jogdir;
+                
+                CASE 5:
+                jtarg.robax.rax_5 := jcurr.robax.rax_5 + jogdir;
+                
+                CASE 6:
+                jtarg.robax.rax_6 := jcurr.robax.rax_6 + jogdir;
+                                
+                ENDTEST
+                                      
+                MoveAbsJ jtarg, vhighjog, fine, tSCup;
+                outputMsg := ("Jogging joint " + ValToStr(joint) + "\0A");
+                TPWrite outputMsg;
+                
+            CASE "EEORIENT":
+                ok := StrToVal(ROBargs{2}, quat.q1);
+                ok := StrToVal(ROBargs{3}, quat.q2);
+                ok := StrToVal(ROBargs{4}, quat.q3);
+                ok := StrToVal(ROBargs{5}, quat.q4);
+                
+                quat := NOrient(quat);
+                
+                rcurr := CRobT();
+                rcurr.rot := quat;
+                rtarg := rcurr;
+                
+                sspeed.v_ori := 100;
+                
+                jtarg := CalcJointT(rtarg,tSCup \ErrorNumber:=myerr);
+                
+                IF myerr = ERR_ROBLIMIT THEN
+                    errmsg := "axis limit";
+                ELSE
+                    MoveL rtarg,sspeed,fine,tSCup;
+                    !MoveAbsJ jtarg,sspeed,fine,tSCup;
+                    outputMsg := ("Orienting end effector to: " + ValToStr(quat) + "\0A");
+                    TPWrite outputMsg;
+                ENDIF
+                
+            CASE "LINMDBAS":
+                rcurr := CRobT();
+                rtarg := rcurr;
+                qcurr := rcurr.rot;
+                
+                IF ROBargs{3} = "pos" THEN
+                    jogdir := sspeed.v_tcp/10;
+                ELSE
+                    jogdir := -sspeed.v_tcp/10;
+                ENDIF
+                
+                TEST ROBargs{2}
+                
+                CASE "X":
+                    rtarg.trans.x := rcurr.trans.x + jogdir;
+                
+                CASE "Y":
+                    rtarg.trans.y := rcurr.trans.y + jogdir;
+                    
+                CASE "Z":
+                    rtarg.trans.z := rcurr.trans.z + jogdir;
+                ENDTEST
+                
+                MoveL rtarg,sspeed,fine,tSCup;
+                outputMsg := ("Linear mode, rel. base, axis " + ROBargs{2} + " in the " + ROBargs{3} + " direction" + "\0A");
+                TPWrite outputMsg;
+                
+            
+            CASE "LINMDEND":
+                rcurr := CRobT();
+                
+                IF ROBargs{3} = "pos" THEN
+                    jogdir := sspeed.v_tcp/10;
+                ELSE
+                    jogdir := -sspeed.v_tcp/10;
+                ENDIF
+                
+                TEST ROBargs{2}
+                
+                CASE "X":
+                        rtarg := RelTool(rcurr,jogdir,0,0);
+                
+                CASE "Y":
+                        rtarg := RelTool(rcurr,0,jogdir,0);
+                    
+                CASE "Z":
+                        rtarg := RelTool(rcurr,0,0,jogdir);
+                    
+                ENDTEST
+                
+                MoveL rtarg,sspeed,fine,tSCup;                             
+                outputMsg := ("Linear mode, rel. EE, axis " + ROBargs{2} + " in the " + ROBargs{3} + " direction" + "\0A");
+                TPWrite outputMsg;                             
+            ENDTEST
+            
+
+        
+        IF quit = FALSE THEN
+            GOTO restart;
+        ENDIF
+        
+        ERROR
+        
+            IF ERRNO = ERR_ROBLIMIT THEN
+                errmsg:= "Joint out of range";
+                RETURN; 
+            ENDIF
+            
     ENDPROC
     
+    TRAP cancelTrap
+        IF INTNO = cancel THEN
+            StorePath;
+            ClearPath;
+            ReceiveCommandLoop;
+        ENDIF
+        
+    ENDTRAP
+        
     PROC MoveJSample()
     
         ! 'MoveJ' executes a joint motion towards a robtarget. This is used to move the robot quickly from one point to another when that 
