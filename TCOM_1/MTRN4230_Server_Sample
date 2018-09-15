@@ -4,7 +4,11 @@ MODULE MTRN4230_Server_Sample
     VAR socketdev client_socket;
     VAR string args{8};
     PERS string ROBargs{8};
-    PERS bool flag := FALSE;
+    PERS bool flag;
+    PERS string errmsg;
+    PERS string jointAngles;
+    PERS string eePos;
+    PERS string eeOri;
     ! The host and port that we will be listening for a connection on.
     !PERS string host := "192.168.125.1";
     VAR string host := "127.0.0.1";
@@ -26,25 +30,33 @@ MODULE MTRN4230_Server_Sample
         
         VAR num comma_pos_1;
         VAR num comma_pos_2;
+        VAR num command_len := 8;
         
         VAR num counter;
         VAR bool ok;
         VAR num set;
         
+        flag:= FALSE;
+        
         ListenForAndAcceptConnection;
         
-        WHILE TRUE DO        
+        WHILE TRUE DO
+            
+        IF errmsg <> "" THEN
+            SocketSend client_socket \Str:=(errmsg+ "\0A");
+            errmsg := "";
+        ENDIF
             
         ! Receive a string from the client.
         SocketReceive client_socket \Str:=received_str;
         
         ! Receive command, should be 5 chars long
-        args{1} := StrPart(received_str,1,5);
+        args{1} := StrPart(received_str,1,command_len);
         
-        IF StrLen(received_str) > 7 THEN
+        IF StrLen(received_str) > command_len THEN
         
             ! Start going through received arguments, separated by commas
-            comma_pos_1 := 6;
+            comma_pos_1 := command_len+1;
             comma_pos_2:= StrFind(received_str,comma_pos_1+1,",");
             
             counter := 2;
@@ -73,25 +85,53 @@ MODULE MTRN4230_Server_Sample
  
         
         TEST args{1}
-        CASE "VACON" :
+        CASE "VACUUMON" :
             TurnVacOn;
+            TPWrite "Vacuum On";
             
-        CASE "VACOF" :
+        CASE "VACUUMOF" :
             TurnVacOff;
+            TPWrite "Vacuum Off";
             
-        CASE "SETSL" :
+        CASE "SETSOLEN" :
             ok := StrToVal(args{2}, set);
             SetVacSol(set);
+            TPWrite ("Vacuum Solenoid " + args{2});
             
-        CASE "CONON" :
+        CASE "CONVEYON" :
             TurnConOnSafely;
-            
-        CASE "CONOF" :
+            TPWrite "Conveyor On";
+
+        CASE "CONVEYOF" :
             TurnConOff;
+            TPWrite "Conveyor Off";
             
-        CASE "CONDR" :
+        CASE "CONVDIRE" :
             ok := StrToVal(args{2}, set);
             SetConDir(set);
+            TPWrite ("Conveyor Direction " + args{2});
+            
+        CASE "ROBPAUSE" :
+            StopMove;
+            TPWrite "Robot Motion Paused";
+            
+        CASE "ROBRESME" :
+            StartMove;
+            TPWrite "Robot Motion Resumed";
+            
+        CASE "ROBCANCL" :
+            StopMoveReset;
+            SETDO DO10_1, 1;
+            TPWrite "Robot Motion Cancelled";     
+            
+        CASE "JNTANGLE" :
+            SocketSend client_socket \Str:=jointAngles;
+            
+        CASE "EEPOSITN" :
+            SocketSend client_socket \Str:=eePos;
+            
+        CASE "EEORIENT" :
+            SocketSend client_socket \Str:=eeOri;
             
         DEFAULT :
             
