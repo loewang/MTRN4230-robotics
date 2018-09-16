@@ -93,6 +93,7 @@ fwrite(socket, 'EEORIENT 0,0,1,0');
 pause(1);
 
 fwrite(socket, 'SETSPEED v10');
+pause(0.5);
 
 i = 0;
 while i < 20
