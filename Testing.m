@@ -51,7 +51,7 @@ fwrite(socket, 'SETSPEED v500');
 pause(0.5);
 
 fwrite(socket, 'MVPOSCON 100,100,100');
-pause(2);
+pause(6);
 
 fwrite(socket, 'JNTANGLE');
 str = ReceiveString(socket);
@@ -63,7 +63,16 @@ fwrite(socket, 'EEORIENT');
 str = ReceiveString(socket);
 
 fwrite(socket, 'SETPOSES 10,10,10,10,10,10');
+pause(2);
+
+fwrite(socket, 'ROBPAUSE');
+pause(3);
+fwrite(socket, 'ROBRESME');
 pause(5);
+fwrite(socket, 'ROBPAUSE');
+pause(1);
+fwrite(socket, 'ROBCANCL');
+pause(1);
 
 fwrite(socket, 'SETSPEED v100');
 pause(0.5);
@@ -83,7 +92,7 @@ while i < 10
 end
 
 i = 0;
-while i < 10
+while i < 20
 	fwrite(socket, 'LINMDEND Z,neg');
     pause(0.1);
     i = i + 1;
@@ -161,7 +170,7 @@ end
 function [str] =  ReceiveString(socket)
     data = fgetl(socket);
     str = strcat(char(data),'\n');
-    %fprintf(str);
+    fprintf(str);
 end
 
 
