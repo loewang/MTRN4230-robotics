@@ -7,14 +7,16 @@ MODULE MTRN4230_Move_Sample
     PERS string jointAngles;
     PERS string eePos;
     PERS string eeOri;
+    PERS bool motionCancel;
+    PERS bool inMotion;
     VAR intnum cancel;
     
     ! The Main procedure. When you select 'PP to Main' on the FlexPendant, it will go to this procedure.
     PROC Initialise()
-        SETDO DO10_1, 0;
+        motionCancel := FALSE;
         StartMove;
         CONNECT cancel WITH cancelTrap;
-        ISignalDO DO10_1, 1, cancel;
+        IPers motionCancel, cancel;
     ENDPROC
     
     PROC Main()
@@ -50,12 +52,9 @@ MODULE MTRN4230_Move_Sample
         VAR orient qcurr;
         VAR robtarget rcurr;
         VAR robtarget rtarg;
-        VAR speeddata vlowjog := [1000, 1, 5000, 1000];
-        VAR speeddata vmedjog := [1000, 3, 5000, 1000];
-        VAR speeddata vhighjog := [1000, 10, 5000, 1000];
         VAR num myerr;
         VAR string outputMsg;
-        
+        VAR num eulerAngles{3};      
         
         restart:
         
@@ -63,7 +62,11 @@ MODULE MTRN4230_Move_Sample
         jointAngles := ValToStr(jcurr.robax);
         rcurr := CRobT();
         eePos := ValToStr(rcurr.trans);
-        eeOri := ValToStr(rcurr.rot);
+        eulerAngles{1} := EulerZYX(\X, rcurr.rot);
+        eulerAngles{2} := EulerZYX(\Y, rcurr.rot);
+        eulerAngles{3} := EulerZYX(\Z, rcurr.rot);
+        eeOri := ValToStr(eulerAngles);
+        
         
         WaitUntil flag = TRUE;
             flag := FALSE;          
@@ -77,13 +80,15 @@ MODULE MTRN4230_Move_Sample
                 
                 jtarg := CalcJointT(Offs(pTableHome, coord.x, coord.y, coord.z),tSCup \ErrorNumber:=myerr);
                 IF myerr = ERR_ROBLIMIT THEN
-                    errmsg := "out of reach";
+                    errmsg := "Robot Movement Limit";
                 ELSE
-                    VariableSample pTableHome, coord.x, coord.y, coord.z, sspeed, fine;
+                    inMotion := TRUE;
+                    MoveAbsJ jtarg,sspeed,fine,tSCup;
+                    !VariableSample pTableHome, coord.x, coord.y, coord.z, sspeed, fine;
+                    inMotion := FALSE;
+                    
                     outputMsg := ("Moving to: " + ValToStr(coord) + "\0A");
                     TPWrite outputMsg;
-                    
-                    !MoveAbsJ jtarg,sspeed,fine,tSCup;
                 ENDIF
                 
 
@@ -91,9 +96,19 @@ MODULE MTRN4230_Move_Sample
                 ok := StrToVal(ROBargs{2}, coord.x);
                 ok := StrToVal(ROBargs{3}, coord.y);
                 ok := StrToVal(ROBargs{4}, coord.z);
-                VariableSample pConvHome, coord.x, coord.y, coord.z, sspeed, fine;
-                outputMsg := ("Moving to: " + ValToStr(coord) + "\0A");
-                TPWrite outputMsg;
+                
+                jtarg := CalcJointT(Offs(pConvHome, coord.x, coord.y, coord.z),tSCup \ErrorNumber:=myerr);
+                IF myerr = ERR_ROBLIMIT THEN
+                    errmsg := "Robot Movement Limit";
+                ELSE
+                    inMotion := TRUE;
+                    MoveAbsJ jtarg,sspeed,fine,tSCup;
+                    !VariableSample pConvHome, coord.x, coord.y, coord.z, sspeed, fine;
+                    inMotion := FALSE;
+                    
+                    outputMsg := ("Moving to: " + ValToStr(coord) + "\0A");
+                    TPWrite outputMsg;
+                ENDIF
                 
             CASE "SETPOSES":
                 ok := StrToVal(ROBargs{2}, pose.rax_1);
@@ -102,32 +117,35 @@ MODULE MTRN4230_Move_Sample
                 ok := StrToVal(ROBargs{5}, pose.rax_4);
                 ok := StrToVal(ROBargs{6}, pose.rax_5);
                 ok := StrToVal(ROBargs{7}, pose.rax_6);
-                
-                jtarg.robax := pose;
-                jtarg.extax := [0, 9E9, 9E9, 9E9, 9E9, 9E9];
-                
-                MoveAbsJ jtarg, sspeed, fine, tSCup;
-                outputMsg := ("Setting axes angles to: " + ValToStr(pose) + "\0A");
-                TPWrite outputMsg;
+
+                IF myerr = ERR_ROBLIMIT THEN ! set the limits !!!!!!
+                    errmsg := "Robot Movement Limit";
+                ELSE
+                    jtarg.robax := pose;
+                    jtarg.extax := [0, 9E9, 9E9, 9E9, 9E9, 9E9];
+                    
+                    inMotion := TRUE;
+                    MoveAbsJ jtarg, sspeed, fine, tSCup;
+                    inMotion := FALSE;
+                    
+                    outputMsg := ("Setting axes angles to: " + ValToStr(pose) + "\0A");
+                    TPWrite outputMsg;
+                ENDIF
                 
             CASE "SETSPEED":
-                !ok := StrToVal(ROBargs{2}, sspeed);
                 TEST ROBargs{2}
                 
-                CASE "v10":
+                CASE "v10": ! Fine
                     sspeed := v10;
                 
-                CASE "v50":
+                CASE "v50": ! Slow
                     sspeed := v50;
                 
-                CASE "v100":
+                CASE "v100": ! Medium
                     sspeed := v100;
                     
-                CASE "v200":
+                CASE "v200": ! Fast
                     sspeed := v200;
-                    
-                CASE "v500":
-                    sspeed := v500;
                 
                 ENDTEST
                 
@@ -167,8 +185,13 @@ MODULE MTRN4230_Move_Sample
                 jtarg.robax.rax_6 := jcurr.robax.rax_6 + jogdir;
                                 
                 ENDTEST
-                                      
-                MoveAbsJ jtarg, vhighjog, fine, tSCup;
+                
+                ! set limits!!!!
+                
+                inMotion := TRUE;
+                MoveAbsJ jtarg, sspeed, fine, tSCup;
+                inMotion := FALSE;
+                
                 outputMsg := ("Jogging joint " + ValToStr(joint) + "\0A");
                 TPWrite outputMsg;
                 
@@ -189,9 +212,12 @@ MODULE MTRN4230_Move_Sample
                 jtarg := CalcJointT(rtarg,tSCup \ErrorNumber:=myerr);
                 
                 IF myerr = ERR_ROBLIMIT THEN
-                    errmsg := "axis limit";
+                    errmsg := "Robot Movement Limit";
                 ELSE
+                    inMotion := TRUE;
                     MoveL rtarg,sspeed,fine,tSCup;
+                    inMotion := FALSE;
+                    
                     !MoveAbsJ jtarg,sspeed,fine,tSCup;
                     outputMsg := ("Orienting end effector to: " + ValToStr(quat) + "\0A");
                     TPWrite outputMsg;
@@ -220,10 +246,18 @@ MODULE MTRN4230_Move_Sample
                     rtarg.trans.z := rcurr.trans.z + jogdir;
                 ENDTEST
                 
-                MoveL rtarg,sspeed,fine,tSCup;
-                outputMsg := ("Linear mode, rel. base, axis " + ROBargs{2} + " in the " + ROBargs{3} + " direction" + "\0A");
-                TPWrite outputMsg;
+                jtarg := CalcJointT(rtarg,tSCup \ErrorNumber:=myerr);
                 
+                IF myerr = ERR_ROBLIMIT THEN
+                    errmsg := "Robot Movement Limit";
+                ELSE
+                    inMotion := TRUE;
+                    MoveL rtarg,sspeed,fine,tSCup;
+                    inMotion := FALSE;
+                    
+                    outputMsg := ("Linear mode, rel. base, axis " + ROBargs{2} + " in the " + ROBargs{3} + " direction" + "\0A");
+                    TPWrite outputMsg;
+                ENDIF
             
             CASE "LINMDEND":
                 rcurr := CRobT();
@@ -247,9 +281,19 @@ MODULE MTRN4230_Move_Sample
                     
                 ENDTEST
                 
-                MoveL rtarg,sspeed,fine,tSCup;                             
-                outputMsg := ("Linear mode, rel. EE, axis " + ROBargs{2} + " in the " + ROBargs{3} + " direction" + "\0A");
-                TPWrite outputMsg;                             
+                jtarg := CalcJointT(rtarg,tSCup \ErrorNumber:=myerr);
+                
+                IF myerr = ERR_ROBLIMIT THEN
+                    errmsg := "Robot Movement Limit";
+                ELSE
+                    inMotion := TRUE;
+                    MoveL rtarg,sspeed,fine,tSCup;
+                    inMotion := FALSE;
+                                    
+                    outputMsg := ("Linear mode, rel. EE, axis " + ROBargs{2} + " in the " + ROBargs{3} + " direction" + "\0A");
+                    TPWrite outputMsg;          
+                ENDIF
+                   
             ENDTEST
             
 
@@ -261,7 +305,7 @@ MODULE MTRN4230_Move_Sample
         ERROR
         
             IF ERRNO = ERR_ROBLIMIT THEN
-                errmsg:= "Joint out of range";
+                errmsg:= "Robot Movement Limit" + "\0A";
                 RETURN; 
             ENDIF
             
@@ -272,6 +316,7 @@ MODULE MTRN4230_Move_Sample
             StorePath;
             ClearPath;
             ReceiveCommandLoop;
+            motionCancel := FALSE;
         ENDIF
         
     ENDTRAP
