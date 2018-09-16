@@ -1,4 +1,6 @@
 MODULE MTRN4230_Server_Sample    
+    
+    ! IO status sending, robot status sending
 
     VAR socketdev client_socket; ! Used to communicate with MATLAB
     VAR string args{8}; ! Used to contain the commands and variables sent from MATLAB
@@ -8,6 +10,8 @@ MODULE MTRN4230_Server_Sample
     PERS string jointAngles; ! Contains current joint angles
     PERS string eePos; ! Contains current end effector position
     PERS string eeOri; ! Contains current end effector orientation
+    PERS bool motionCancel; ! Changing this will activate the Trap routine which cancels the current motion
+    PERS bool inMotion; ! Indicates whether or not the robot is in motion
     
     VAR string host := "127.0.0.1";
     CONST num port := 1025;
@@ -74,7 +78,10 @@ MODULE MTRN4230_Server_Sample
             args{counter} := StrPart(received_str,comma_pos_1+1,StrLen(received_str)-comma_pos_1);
             
             ! To avoid movement commands being overwritten by server commands, we copy into the ROBarg array
-            ROBargs := args;
+            IF args{2} <> "1" OR args{2} <> "0" THEN ! Only copy if it isn't a I/O command
+                ROBargs := args;
+                args{1} := "";
+            ENDIF
             
             ! Set flag to TRUE to indicate the command has been received
             flag := TRUE;
@@ -112,6 +119,7 @@ MODULE MTRN4230_Server_Sample
             
         CASE "ROBPAUSE" : ! Pauses current motion task
             StopMove;
+            inMotion := FALSE;
             TPWrite "Robot Motion Paused";
             
         CASE "ROBRESME" : ! Resumes previous motion task
@@ -119,9 +127,13 @@ MODULE MTRN4230_Server_Sample
             TPWrite "Robot Motion Resumed";
             
         CASE "ROBCANCL" : ! Cancels previous motion task
-            StopMoveReset;
-            SETDO DO10_1, 1;
-            TPWrite "Robot Motion Cancelled";     
+            IF inMotion = FALSE THEN
+                StopMoveReset;
+                motionCancel := TRUE;
+                TPWrite "Robot Motion Cancelled";
+            ELSE
+                TPWrite "Cannot Cancel Motion without Pause";    
+            ENDIF
             
         CASE "JNTANGLE" : ! Send joint angles to MATLAB
             SocketSend client_socket \Str:=jointAngles+"\0A";
