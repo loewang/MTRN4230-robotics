@@ -1,0 +1,59 @@
+% Robotics Assignment 1 
+% Jogging Buttons 
+
+% Before main WHILE loop --------------------------------------------------
+
+PrevJogSpeedKnob = 'Fine';
+PrevBaseButton = 1;
+
+% Main WHILE loop ---------------------------------------------------------
+
+% Jog Speed
+JogSpeedKnob = app.JogSpeedKnob.Value;
+pause(0.2);
+
+if(~strcmp(JogSpeedKnob,PrevJogSpeedKnob))
+    switch JogSpeedKnob
+        case 'Fine'  
+            fwrite(socket, 'SETSPEED v10');
+        	disp('Fine');
+            pause(0.1);
+        case 'Slow'
+            fwrite(socket, 'SETSPEED v50');
+        	disp('Slow');
+            pause(0.1);
+        case 'Medium'
+            fwrite(socket, 'SETSPEED v100');
+        	disp('Medium');
+            pause(0.1);
+        case 'Fast'
+            fwrite(socket, 'SETSPEED v200');
+        	disp('Fast');
+            pause(0.1);
+    end
+    PrevJogSpeedKnob = JogSpeedKnob;
+end
+
+% Jog Frame Button
+BaseButton = app.BaseButton.Value;
+pause(0.2);
+EndEffectorButton = app.EndEffectorButton.Value;
+pause(0.2);
+
+if(BaseButton ~= PrevBaseButton)
+    if (EndEffectorButton == 1)
+        % MAKE SURE TO EDIT 
+        fwrite(socket, 'JOGFRAME IS END EFFECTOR');
+        disp('JOGFRAME IS END EFFECTOR');
+        pause(0.1);
+    else
+        % MAKE SURE TO EDIT 
+        fwrite(socket, 'JOGFRAME IS BASE');
+        disp('JOGFRAME IS BASE');
+        pause(0.1);
+    end
+    
+    PrevBaseButton = BaseButton;
+end
+
+
