@@ -5,8 +5,12 @@ function GUI2RAPID()
     app = IRB120GUI();
     pause(0.5);
     disp('GUI OPEN');
-    %robot_IP_address = '192.168.125.1';
-    robot_IP_address = '127.0.0.1'; % Simulation ip address
+    
+    if(strcmp(app.ControlModeButtonGroup.SelectedObject.Text,'Robot'))
+        robot_IP_address = '192.168.125.1';
+    else
+        robot_IP_address = '127.0.0.1'; % Simulation ip address
+    end
 
     robot_port = 1025;
 
@@ -30,6 +34,13 @@ function GUI2RAPID()
     end
     
     prevMoved = 0;
+    PrevConStat = 'g';
+    PrevMotorsON = 'g';
+    PrevEstop = 'g';
+    PrevExErr = 'g';
+    PrevMotEn = 'g';
+    PrevLightCurt = 'g';
+    PrevMotionSup = 'g';
     
     while(1)
         if(~isequal(get(socket, 'Status'), 'open'))
@@ -43,14 +54,28 @@ function GUI2RAPID()
                 break;
             end
             
+            if(app.ControlModeButton_Changed)
+                if(strcmp(app.ControlModeButtonGroup.SelectedObject.Text,'Robot'))
+                    robot_IP_address = '192.168.125.1';
+                else
+                    robot_IP_address = '127.0.0.1'; % Simulation ip address
+                end
+                break;
+            end
+            
             % Get Robot status update
             
             fwrite(socket,'GTCONSTA');
             str = ReceiveString(socket);
             if(strcmp(str,'1'))
                 app.ConveyorStatusLamp.Color = 'g';
+                PrevConStat = 'g';
             else
                 app.ConveyorStatusLamp.Color = 'r';
+                if(PrevConStat == 'g')
+                    run('Message_ConveyorEnable.mlapp');
+                end
+                PrevConStat = 'r';
             end
             
             fwrite(socket,'GTVACRUN');
@@ -89,48 +114,78 @@ function GUI2RAPID()
             str = ReceiveString(socket);
             if(strcmp(str,'1'))
                 app.MotorsONLamp.Color = 'g';
+                PrevMotorsON = 'g';
             else
                 app.MotorsONLamp.Color = 'r';
+                if(PrevMotorsON == 'g')
+                    run('Message_MotorOff.mlapp');
+                end
+                PrevMotorsON = 'r';
             end
             
             fwrite(socket,'GTESTOP1');
             str = ReceiveString(socket);
             if(strcmp(str,'1'))
                 app.EmergencyStopLamp.Color = 'g';
+                PrevEstop = 'g';
             else
                 app.EmergencyStopLamp.Color = 'r';
+                if(PrevEstop == 'g')
+                    run('Message_eStop.mlapp');
+                end
+                PrevEstop = 'r';
             end
             
             fwrite(socket,'GTEXCERR');
             str = ReceiveString(socket);
             if(strcmp(str,'0'))
                 app.ExecutionErrorLamp.Color = 'g';
+                PrevExErr = 'g';
             else
                 app.ExecutionErrorLamp.Color = 'r';
+                if(PrevExErr == 'g')
+                    run('Message_ExcecutionError.mlapp');
+                end
+                PrevExErr = 'r';
             end
 
             fwrite(socket,'GTHDENBL');
             str = ReceiveString(socket);
             if(strcmp(str,'1'))
                 app.MotorsEnableLamp.Color = 'g';
+                PrevMotEn = 'g';
             else
                 app.MotorsEnableLamp.Color = 'r';
+                if(PrevMotEn == 'g')
+                    run('Message_HoldEnable.mlapp');
+                end
+                PrevMotEn = 'r';
             end
             
             fwrite(socket,'GTLTCURT');
             str = ReceiveString(socket);
             if(strcmp(str,'0'))
                 app.LightCurtainLamp.Color = 'g';
+                PrevLightCurt = 'g';
             else
                 app.LightCurtainLamp.Color = 'r';
+                if(PrevLightCurt == 'g')
+                    run('Message_LightCurtain.mlapp');
+                end
+                PrevLightCurt = 'r';
             end
             
             fwrite(socket,'GTMOTSUP');
             str = ReceiveString(socket);
             if(strcmp(str,'0'))
                 app.MotionSupervisionLamp.Color = 'g';
+                PrevMotionSup = 'g';
             else
                 app.MotionSupervisionLamp.Color = 'r';
+                if(PrevMotionSup == 'g')
+                    run('Message_MotionSupervision.mlapp');
+                end
+                PrevMotionSup = 'r';
             end
             
             fwrite(socket, 'JNTANGLE');
@@ -143,13 +198,31 @@ function GUI2RAPID()
             app.JointAnglesEditField_4.Value = jAng(4);
             app.JointAnglesEditField_5.Value = jAng(5);
             app.JointAnglesEditField_6.Value = jAng(6);
+
+            fwrite(socket, 'EEPOSITN');
+            str = ReceiveString(socket);
+            EEPos = str2num(str);
             
-% 
-%             fwrite(socket, 'EEPOSITN');
-%             str = ReceiveString(socket);
-% 
-%             fwrite(socket, 'EEORIENT');
-%             str = ReceiveString(socket);
+            app.EEPosEditField_X.Value = EEPos(1);
+            app.EEPosEditField_Y.Value = EEPos(2);
+            app.EEPosEditField_Z.Value = EEPos(3);
+
+            fwrite(socket, 'EEORIENT');
+            str = ReceiveString(socket);
+            EEOri = str2num(str);
+            
+            app.EEOriEditField_X.Value = EEOri(1);
+            app.EEOriEditField_Y.Value = EEOri(2);
+            app.EEOriEditField_Z.Value = EEOri(3);
+            
+            fwrite(socket, 'INMOTION');
+            str = ReceiveString(socket);
+            
+            if(strcmp(str,'FALSE'))
+                app.RobotReadyLamp.Color = 'g';
+            else
+                app.RobotReadyLamp.Color = 'r';
+            end
 
             if(app.DirectionSwitch_Changed)
                 SwitchCommand(app.DirectionSwitch.Value,socket,'Forward','CONVDIRE 0','CONVDIRE 1');
@@ -323,18 +396,7 @@ function GUI2RAPID()
                 app.Button_4_Pressed = 0;
             end
             
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            if(app.MoveButton_Pressed)
+           if(app.MoveButton_Pressed)
                 
                 if(app.MoveButton.Value == 1)
                     if(prevMoved == 1)
@@ -359,6 +421,21 @@ function GUI2RAPID()
                             app.ReorientEndEffectorEditField_3.Value,  app.ReorientEndEffectorEditField_4.Value)); 
                         end
                         
+                        if(strcmp(app.InputMethodButtonGroup.SelectedObject.Text, 'End Effector Position'))
+                            disp('EE Position Mode');
+                            
+                            if(strcmp(app.RelativeHomeDropDown.Value, 'Table'))
+                                fwrite(socket, sprintf('MVPOSTAB %f,%f,%f',...
+                                    app.EndEffectorPositionEditField_X.Value, app.EndEffectorPositionEditField_Y.Value,...
+                                    app.EndEffectorPositionEditField_Z.Value));
+                            else
+                                fwrite(socket, sprintf('MVPOSCON %f,%f,%f',...
+                                    app.EndEffectorPositionEditField_X.Value, app.EndEffectorPositionEditField_Y.Value,...
+                                    app.EndEffectorPositionEditField_Z.Value));
+                            end
+                        
+                        end
+                        
                     end 
                 else 
                     %if move = 0 -> pause
@@ -368,22 +445,13 @@ function GUI2RAPID()
                 pause(0.1);
             end
             
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
             pause(0.01);
         end
         
         if(app.ReconnectButton_Pressed)
             try
+                socket = tcpip(robot_IP_address, robot_port);
+                set(socket, 'ReadAsyncMode', 'continuous');
                 fopen(socket);
                 disp('Connected');
                 app.ConnectionStatusLamp.Color = 'g';
