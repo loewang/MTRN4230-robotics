@@ -1,25 +1,27 @@
 MODULE MTRN4230_Move_Sample
     
-    PERS string errmsg;
-    PERS string ROBargs{8};
-    PERS bool flag;
-    PERS bool quit;
-    PERS speeddata sspeed;
-    PERS string jointAngles;
-    PERS string eePos;
-    PERS string eeOri;
-    PERS bool motionCancel;
-    PERS bool inMotion;
-    VAR intnum cancel;
-    VAR intnum execErr;
+    PERS string errmsg; ! Error/Okay messages stored in string 
+    PERS string ROBargs{8}; ! Stores movement commands received in Server_Sample
+    PERS bool flag; ! Indicates a movement command has been copied into ROBargs
+    PERS bool quit; ! Program keeps looping while quit is FALSE
+    PERS speeddata sspeed; ! Speed variable which controls movement speed
+    PERS string jointAngles; ! Contains current joint angles
+    PERS string eePos; ! Contains current end effector position
+    PERS string eeOri; ! Contains current end effector orientation 
+    PERS bool motionCancel; ! Indicates whether the motion has been cancelled
+    PERS bool inMotion; ! Indicates whether the robot is in motion
+    VAR intnum cancel; ! Interrupt number connected to motionCancel
+    VAR intnum execErr; ! Interrupt number connected to DO_EXEC_ERR
     
-    ! The Main procedure. When you select 'PP to Main' on the FlexPendant, it will go to this procedure.
     PROC Initialise()
-        motionCancel := FALSE;
+        motionCancel := FALSE; ! Set motionCancel to be initally FALSE
+        !MotionSup \On; 
         
+        ! Connect the cancelTrap routine which runs when motionCancel bool changes value
         CONNECT cancel WITH cancelTrap;
         IPers motionCancel, cancel;
         
+        ! Connect the execErrTrap routine which runs when DO_EXEC_ERR has a value 1
         CONNECT execErr WITH execErrTrap;
         ISignalDO DO_EXEC_ERR, 1, execErr;
         
@@ -27,67 +29,65 @@ MODULE MTRN4230_Move_Sample
     
     PROC Main()
                
-        ! This is a procedure defined in a System Module, so you will have access to it.
-        ! This will move the robot to its calibration.
-        !MoveToCalibPos;
-        
         Initialise;
-        ! Call a procedure that we have defined below.
-        MoveJSample;
         
-        ! Call another procedure that we have defined.
-        !MoveLSample;
-        
-        ReceiveCommandLoop;
-        
-        ! Call another procedure, but provide some input arguments.
+        ReceiveCommandLoop; ! Main Loop
 
     ENDPROC
     
     PROC ReceiveCommandLoop()
         
-        VAR bool ok;
-        VAR pos coord;
-        VAR robjoint pose;
-        VAR jointtarget jtarg;
-        VAR jointtarget jcurr;
-        VAR num joint;
-        VAR num jogdir;
-        VAR orient quat;
-        VAR orient qcurr;
-        VAR robtarget rcurr;
-        VAR robtarget rtarg;
-        VAR num myerr;
-        VAR string outputMsg;
-        VAR num eulerAngles{3};      
+        VAR bool ok; ! For StrToVal function
+        VAR pos coord; ! Contains offset coordinates for movement relative to table and conveyor
+        VAR robjoint pose; ! Contains desired angle for all six joints
+        VAR jointtarget jtarg; ! Contains target joint angles
+        VAR jointtarget jcurr; ! Contains current joint angles
+        VAR num joint; ! Contains the joint number which will be jogged
+        VAR num jogdir; ! Contains the jogging direction (pos/neg)
+        VAR orient quat; ! Contains desired quaternion for reorienting the end effector
+        VAR orient qcurr; ! Contains the current quaternion
+        VAR robtarget rcurr; ! Contains the current robot properties
+        VAR robtarget rtarg; ! Contains the target robot properties
+        VAR num myerr; ! For catching axis errors
+        VAR string outputMsg; ! For printing messages to the FlexPendant
+        VAR num eulerAngles{3}; ! Stores the 3 Euler Angles found from converting the current orientation from quaternion      
         
-        restart:
+        restart: ! Jumps back to this point if quit is FALSE
         
-        jcurr := CJointT();
-        jointAngles := ValToStr(jcurr.robax);
-        rcurr := CRobT();
-        eePos := ValToStr(rcurr.trans);
+        jcurr := CJointT(); ! Obtain current joint angles
+        jointAngles := ValToStr(jcurr.robax); ! Convert joint angles to string, ready to be sent to MATLAB
+        rcurr := CRobT(); ! Obtain current robot properties
+        eePos := ValToStr(rcurr.trans); ! Convert end effector position to string, ready to be sent to MATLAB
+        
+        ! Convert orientation from quaternion to Euler angles
         eulerAngles{1} := EulerZYX(\X, rcurr.rot);
         eulerAngles{2} := EulerZYX(\Y, rcurr.rot);
         eulerAngles{3} := EulerZYX(\Z, rcurr.rot);
-        eeOri := ValToStr(eulerAngles);
+        eeOri := ValToStr(eulerAngles); ! Convert end effector orientation to string, ready to be sent to MATLAB
         
         
-        WaitUntil flag = TRUE;
-            flag := FALSE;          
-            
+        WaitUntil flag = TRUE; ! Wait here until a movement command has been receieved
+            flag := FALSE; ! Set flag back to false once command has been received         
+
+            ! Switch to determine which command was sent
             TEST ROBargs{1}
             
-            CASE "MVPOSTAB":
+            CASE "MVPOSTAB": ! Move position relative to table
+            
+                ! Convert received string arguments to values
                 ok := StrToVal(ROBargs{2}, coord.x);
                 ok := StrToVal(ROBargs{3}, coord.y);
                 ok := StrToVal(ROBargs{4}, coord.z);
                 
+                ! Calculate required joint angles to reach the offset coordinate position and check if it's reachable
                 jtarg := CalcJointT(Offs(pTableHome, coord.x, coord.y, coord.z),tSCup \ErrorNumber:=myerr);
-                IF myerr = ERR_ROBLIMIT THEN
+                
+                ! If not feasible send error message to both MATLAB and FlexPendant
+                IF myerr = ERR_ROBLIMIT THEN 
                     errmsg := "Robot Movement Limit";
                     outputMsg := ("Robot Movement Limit" + "\0A");
                     TPWrite outputMsg;
+                ! Else perform the movement command and indicate that the movement is okay
                 ELSE
                     outputMsg := ("Moving to: " + ValToStr(coord) + "\0A");
                     TPWrite outputMsg;
@@ -99,7 +99,7 @@ MODULE MTRN4230_Move_Sample
                 ENDIF
                 
 
-            CASE "MVPOSCON":
+            CASE "MVPOSCON": ! Move position relative to conveyor
                 ok := StrToVal(ROBargs{2}, coord.x);
                 ok := StrToVal(ROBargs{3}, coord.y);
                 ok := StrToVal(ROBargs{4}, coord.z);
@@ -119,7 +119,7 @@ MODULE MTRN4230_Move_Sample
                     inMotion := FALSE;
                 ENDIF
                 
-            CASE "SETPOSES":
+            CASE "SETPOSES": ! Set all joint angles 
                 ok := StrToVal(ROBargs{2}, pose.rax_1);
                 ok := StrToVal(ROBargs{3}, pose.rax_2);
                 ok := StrToVal(ROBargs{4}, pose.rax_3);
@@ -146,20 +146,23 @@ MODULE MTRN4230_Move_Sample
                     
                 ENDIF       
                            
-            CASE "JOGJOINT":
+            CASE "JOGJOINT": ! Jog a joint
                 ok := StrToVal(ROBargs{2}, joint);
                 
-                IF ROBargs{3} = "pos" THEN
+                ! Set jogdir to a value relative to the set speed
+                IF ROBargs{3} = "pos" THEN 
                     jogdir := sspeed.v_tcp/10;
                 ELSE
                     jogdir := -sspeed.v_tcp/10;
                 ENDIF
                     
-                jcurr := CJointT();
-                jtarg := jcurr;
+                jcurr := CJointT(); ! Get current joint angles
+                jtarg := jcurr; ! Set target joint angles to current joint angles
                 
+                ! Switch to determine which joint will be jogged
                 TEST joint
                 
+                ! Add jogdir to the desired joint
                 CASE 1:
                 jtarg.robax.rax_1 := jcurr.robax.rax_1 + jogdir;
                 
@@ -180,6 +183,7 @@ MODULE MTRN4230_Move_Sample
                                 
                 ENDTEST
                 
+                ! Make sure none of the joints are jogged beyond their angle limits
                 IF abs(jtarg.robax.rax_1) > 165 THEN
                     outputMsg := ("Robot Movement Limit" + "\0A");
                     TPWrite outputMsg;
@@ -215,22 +219,24 @@ MODULE MTRN4230_Move_Sample
 
                 ENDIF
                 
-            CASE "EEORIENT":
+            CASE "EEORIENT": ! Orient the end effector according to a desired quaternion
                 ok := StrToVal(ROBargs{2}, quat.q1);
                 ok := StrToVal(ROBargs{3}, quat.q2);
                 ok := StrToVal(ROBargs{4}, quat.q3);
                 ok := StrToVal(ROBargs{5}, quat.q4);
                 
-                quat := NOrient(quat);
+                quat := NOrient(quat); ! Normalise the quaternion in case it doesn't quite add up to 1
                 
-                rcurr := CRobT();
-                rcurr.rot := quat;
-                rtarg := rcurr;
+                rcurr := CRobT(); ! Get current robot properties
+                rcurr := rtarg; ! Set target robot properties to current robot properties 
+                rtarg.rot := quat; ! Set target quaternion 
                 
-                sspeed.v_ori := 100;
+                sspeed.v_ori := sspeed.v_tcp; ! Set orientation speed to be the same as end effector speed
                 
+                ! Calculate required joint angles to reach the offset coordinate position and check if it's reachable
                 jtarg := CalcJointT(rtarg,tSCup \ErrorNumber:=myerr);
                 
+                ! Make sure each joint is not exceeding its angle limit
                 IF abs(jtarg.robax.rax_1) > 165 THEN
                     outputMsg := ("Robot Movement Limit" + "\0A");
                     TPWrite outputMsg;
@@ -264,35 +270,23 @@ MODULE MTRN4230_Move_Sample
                     MoveL rtarg,sspeed,fine,tSCup;
                     inMotion := FALSE;  
                 
-!                IF myerr = ERR_ROBLIMIT THEN
-!                    outputMsg := ("Robot Movement Limit" + "\0A");
-!                    TPWrite outputMsg;
-!                    errmsg := "Robot Movement Limit";
-!                ELSE                   
-!                    outputMsg := ("Orienting end effector to: " + ValToStr(quat) + "\0A");
-!                    TPWrite outputMsg;
-!                    errmsg := "Movement Okay";
-                    
-!                    inMotion := TRUE;
-!                    MoveL rtarg,sspeed,fine,tSCup;
-!                    inMotion := FALSE;
-                    
-                    !MoveAbsJ jtarg,sspeed,fine,tSCup;
                 ENDIF
                 
-            CASE "LINMDBAS":
-                rcurr := CRobT();
-                rtarg := rcurr;
-                qcurr := rcurr.rot;
+            CASE "LINMDBAS": ! Linear mode relative to base frame
+                rcurr := CRobT(); ! Get current robot properties
+                rtarg := rcurr; ! Set target robot properties to current robot properties
                 
+                ! Set jogdir relative to set speed
                 IF ROBargs{3} = "pos" THEN
                     jogdir := sspeed.v_tcp/10;
                 ELSE
                     jogdir := -sspeed.v_tcp/10;
                 ENDIF
                 
+                ! Switch to determine which direction the linear movement is in
                 TEST ROBargs{2}
                 
+                ! Increment desired the end effector coordinate by jogdir
                 CASE "X":
                     rtarg.trans.x := rcurr.trans.x + jogdir;
                 
@@ -303,6 +297,7 @@ MODULE MTRN4230_Move_Sample
                     rtarg.trans.z := rcurr.trans.z + jogdir;
                 ENDTEST
                 
+                ! Calculate required joint angles to reach the offset coordinate position and check if it's reachable
                 jtarg := CalcJointT(rtarg,tSCup \ErrorNumber:=myerr);
                 
                 IF myerr = ERR_ROBLIMIT THEN
@@ -319,17 +314,20 @@ MODULE MTRN4230_Move_Sample
                     inMotion := FALSE;
                 ENDIF
             
-            CASE "LINMDEND":
-                rcurr := CRobT();
+            CASE "LINMDEND": ! Linear mode relative to end effector frame
+                rcurr := CRobT(); ! Get current robot properties
                 
+                ! Set jogdir relative to set speed
                 IF ROBargs{3} = "pos" THEN
                     jogdir := sspeed.v_tcp/10;
                 ELSE
                     jogdir := -sspeed.v_tcp/10;
                 ENDIF
                 
+                ! Switch to determine which direction the linear movement is in
                 TEST ROBargs{2}
                 
+                ! Increment the current end effector position by jogdir in the desired direction relative to its own frame
                 CASE "X":
                         rtarg := RelTool(rcurr,jogdir,0,0);
                 
@@ -341,9 +339,12 @@ MODULE MTRN4230_Move_Sample
                     
                 ENDTEST
                 
+                ! Calculate required joint angles to reach the offset coordinate position and check if it's reachable
                 jtarg := CalcJointT(rtarg,tSCup \ErrorNumber:=myerr);
                 
                 IF myerr = ERR_ROBLIMIT THEN
+                    outputMsg := ("Robot Movement Limit" + "\0A");
+                    TPWrite outputMsg;
                     errmsg := "Robot Movement Limit";
                 ELSE
                     outputMsg := ("Linear mode, rel. EE, axis " + ROBargs{2} + " in the " + ROBargs{3} + " direction" + "\0A");
