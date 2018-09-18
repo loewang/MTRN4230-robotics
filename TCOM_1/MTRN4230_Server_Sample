@@ -11,7 +11,7 @@ MODULE MTRN4230_Server_Sample
     PERS string eeOri; ! Contains current end effector orientation
     PERS bool motionCancel; ! Changing this will activate the Trap routine which cancels the current motion
     PERS bool inMotion; ! Indicates whether or not the robot is in motion
-    VAR bool socketTimeout;
+    VAR bool socketTimeout; ! Indicates whether or not the socket has been timed out
     VAR intnum errmessage; ! Interrupt number connected to changes in the errmsg string variable
             
     VAR string host := "127.0.0.1";
@@ -48,7 +48,7 @@ MODULE MTRN4230_Server_Sample
         errmsg := ""; ! Clear errmsg string
         socketTimeout := FALSE;
         
-        ! Connect the errMessageTrap routine to be run when errmsg string changes value
+        ! Connect the errMessageTrap routine which runs when errmsg string changes value
         CONNECT errmessage WITH errMessageTrap;
         IPers errmsg, errmessage;
         
