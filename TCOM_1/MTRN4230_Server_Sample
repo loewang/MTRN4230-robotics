@@ -1,11 +1,9 @@
 MODULE MTRN4230_Server_Sample    
     
-    ! IO status sending, robot status sending
-
     VAR socketdev client_socket; ! Used to communicate with MATLAB
     VAR string args{8}; ! Used to contain the commands and variables sent from MATLAB
     PERS string ROBargs{8}; ! Movement commands are copied and accessible by Move_Sample\
-    PERS speeddata sspeed;
+    PERS speeddata sspeed; ! Variable used to control movement speeds
     PERS bool flag; ! Flag is set to TRUE when a command is received
     PERS string errmsg; ! Used to contain any error messages caught in Move_Sample
     PERS string jointAngles; ! Contains current joint angles
@@ -13,16 +11,17 @@ MODULE MTRN4230_Server_Sample
     PERS string eeOri; ! Contains current end effector orientation
     PERS bool motionCancel; ! Changing this will activate the Trap routine which cancels the current motion
     PERS bool inMotion; ! Indicates whether or not the robot is in motion
-    VAR intnum errmessage;
+    VAR bool socketTimeout;
+    VAR intnum errmessage; ! Interrupt number connected to changes in the errmsg string variable
             
     VAR string host := "127.0.0.1";
     CONST num port := 1025;
     
     PROC Main ()
         IF RobOS() THEN
-            host := "192.168.125.1";
+            host := "192.168.125.1"; ! IP Address for the lab robot
         ELSE
-            host := "127.0.0.1";
+            host := "127.0.0.1"; ! Local IP Address for virtual robot
         ENDIF
         MainServer;
         
@@ -40,13 +39,16 @@ MODULE MTRN4230_Server_Sample
         VAR bool ok; ! Bool variable just for StrToVal
         VAR num set; ! For setting values for I/Os
         
+        ! Initialisation
         flag:= FALSE; ! Initialise the flag to be false
-        StartMove;
-        sspeed := v100;
-        args := ["","","","","","","",""];
-        ROBargs := ["","","","","","","",""];
-        errmsg := "";
+        StartMove; ! Make sure that any previous StopMove commands are corrected
+        sspeed := v100; ! Set initial speed to v100
+        args := ["","","","","","","",""]; ! Clear args array
+        ROBargs := ["","","","","","","",""]; ! Clear ROBargs array
+        errmsg := ""; ! Clear errmsg string
+        socketTimeout := FALSE;
         
+        ! Connect the errMessageTrap routine to be run when errmsg string changes value
         CONNECT errmessage WITH errMessageTrap;
         IPers errmsg, errmessage;
         
@@ -54,7 +56,7 @@ MODULE MTRN4230_Server_Sample
         
         WHILE TRUE DO
                    
-        args := ["","","","","","","",""];
+        args := ["","","","","","","",""]; ! Reset args every loop
             
         ! Receive command string from the MATLAB
         SocketReceive client_socket \Str:=received_str;
@@ -85,19 +87,21 @@ MODULE MTRN4230_Server_Sample
             
             ! To avoid movement commands being overwritten by server commands, we copy into the ROBarg array
             IF args{3} <> "" THEN ! Only copy if it isn't a I/O command
-                    ROBargs := args;
-                    args{1} := "";
-                    
-                    ! Set flag to TRUE to indicate the command has been received
-                    flag := TRUE;
+                ROBargs := args;
+                args{1} := ""; ! clear args{1} just in case, so no server commands are run
+                
+                ! Set flag to TRUE to indicate the command has been received
+                flag := TRUE;
             ENDIF
             
         ENDIF
         
         ! Server Commands - I/O Setting, Status Display
         
-        TEST args{1}
-        CASE "SETSPEED":
+        ! Check what command was receieved
+        TEST args{1} 
+        
+        CASE "SETSPEED": ! Set speed of motion tasks
             TEST args{2}
             
             CASE "v10": ! Fine
@@ -172,6 +176,9 @@ MODULE MTRN4230_Server_Sample
         CASE "INMOTION" : ! Send inMotion status
             SocketSend client_socket \Str:=ValToStr(inMotion)+"\0A";
             
+        CASE "SCKTTIME" : ! Send socketTimeout status
+            SocketSend client_socket \Str:=ValToStr(socketTimeout)+"\0A";
+            
         ! I/O Status Request Commands
         
         CASE "GTCONSTA" : ! Send ConStat status
@@ -215,7 +222,7 @@ MODULE MTRN4230_Server_Sample
             
         CASE "GTTROBRN" : ! Send TROB_RUNNING status - 1 = TROB task is running
             SocketSend client_socket \Str:=ValToStr(DO_TROB_RUNNING)+"\0A";
-            
+
         DEFAULT : ! None
             
         ENDTEST
@@ -226,6 +233,7 @@ MODULE MTRN4230_Server_Sample
         
         ERROR
             IF ERRNO=ERR_SOCK_TIMEOUT THEN
+                socketTimeout := TRUE; 
                 RETRY;
             ELSEIF ERRNO=ERR_SOCK_CLOSED THEN
                 client_recover;
