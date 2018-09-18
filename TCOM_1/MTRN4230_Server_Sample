@@ -44,6 +44,7 @@ MODULE MTRN4230_Server_Sample
         sspeed := v100;
         args := ["","","","","","","",""];
         ROBargs := ["","","","","","","",""];
+        errmsg := "";
         
         ListenForAndAcceptConnection; ! Connect with MATLAB       
         
@@ -88,10 +89,10 @@ MODULE MTRN4230_Server_Sample
             IF args{3} <> "" THEN ! Only copy if it isn't a I/O command
                     ROBargs := args;
                     args{1} := "";
+                    
+                    ! Set flag to TRUE to indicate the command has been received
+                    flag := TRUE;
             ENDIF
-            
-            ! Set flag to TRUE to indicate the command has been received
-            flag := TRUE;
             
         ENDIF
  
