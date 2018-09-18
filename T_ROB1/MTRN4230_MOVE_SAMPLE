@@ -283,7 +283,7 @@ MODULE MTRN4230_Move_Sample
                    
             ENDTEST
             
-
+        ROBargs := ["","","","","","","",""];
         
         IF quit = FALSE THEN
             GOTO restart;
