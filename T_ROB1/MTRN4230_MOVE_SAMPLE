@@ -89,14 +89,13 @@ MODULE MTRN4230_Move_Sample
                     outputMsg := ("Robot Movement Limit" + "\0A");
                     TPWrite outputMsg;
                 ELSE
-                    inMotion := TRUE;
-                    MoveAbsJ jtarg,sspeed,fine,tSCup;
-                    !VariableSample pTableHome, coord.x, coord.y, coord.z, sspeed, fine;
-                    inMotion := FALSE;
-                    
                     outputMsg := ("Moving to: " + ValToStr(coord) + "\0A");
                     TPWrite outputMsg;
-                    errmsg := "Movement Successful";
+                    errmsg := "Movement Okay";
+                    
+                    inMotion := TRUE;
+                    MoveAbsJ jtarg,sspeed,fine,tSCup;
+                    inMotion := FALSE;
                 ENDIF
                 
 
@@ -111,14 +110,13 @@ MODULE MTRN4230_Move_Sample
                     TPWrite outputMsg;
                     errmsg := "Robot Movement Limit";
                 ELSE
+                    errmsg := "Movement Okay";
+                    outputMsg := ("Moving to: " + ValToStr(coord) + "\0A");
+                    TPWrite outputMsg;   
+                    
                     inMotion := TRUE;
                     MoveAbsJ jtarg,sspeed,fine,tSCup;
-                    !VariableSample pConvHome, coord.x, coord.y, coord.z, sspeed, fine;
                     inMotion := FALSE;
-                    
-                    outputMsg := ("Moving to: " + ValToStr(coord) + "\0A");
-                    TPWrite outputMsg;
-                    errmsg := "Movement Successful";
                 ENDIF
                 
             CASE "SETPOSES":
@@ -136,14 +134,16 @@ MODULE MTRN4230_Move_Sample
                 ELSE
                     jtarg.robax := pose;
                     jtarg.extax := [0, 9E9, 9E9, 9E9, 9E9, 9E9];
+                                        
+                    outputMsg := ("Setting axes angles to: " + ValToStr(pose) + "\0A");
+                    TPWrite outputMsg;
+                    errmsg := "Movement Okay";
                     
                     inMotion := TRUE;
                     MoveAbsJ jtarg, sspeed, fine, tSCup;
                     inMotion := FALSE;
+
                     
-                    outputMsg := ("Setting axes angles to: " + ValToStr(pose) + "\0A");
-                    TPWrite outputMsg;
-                    errmsg := "Movement Successful";
                 ENDIF       
                            
             CASE "JOGJOINT":
@@ -205,13 +205,14 @@ MODULE MTRN4230_Move_Sample
                     TPWrite outputMsg;
                     errmsg := "Robot Movement Limit";
                 ELSE
-                    inMotion := TRUE;
-                    MoveAbsJ jtarg, sspeed, fine, tSCup;
-                    inMotion := FALSE;
-                    
                     outputMsg := ("Jogging joint " + ValToStr(joint) + "\0A");
                     TPWrite outputMsg;
-                    errmsg := "Movement Successful";
+                    errmsg := "Movement Okay";
+                    
+                    inMotion := TRUE;
+                    MoveAbsJ jtarg, sspeed, fine, tSCup;
+                    inMotion := FALSE;       
+
                 ENDIF
                 
             CASE "EEORIENT":
@@ -230,19 +231,53 @@ MODULE MTRN4230_Move_Sample
                 
                 jtarg := CalcJointT(rtarg,tSCup \ErrorNumber:=myerr);
                 
-                IF myerr = ERR_ROBLIMIT THEN
+                IF abs(jtarg.robax.rax_1) > 165 THEN
+                    outputMsg := ("Robot Movement Limit" + "\0A");
+                    TPWrite outputMsg;
+                    errmsg := "Robot Movement Limit";
+                ELSEIF abs(jtarg.robax.rax_2) > 110 THEN
+                    outputMsg := ("Robot Movement Limit" + "\0A");
+                    TPWrite outputMsg;
+                    errmsg := "Robot Movement Limit";
+                ELSEIF jtarg.robax.rax_3 > 70 OR jtarg.robax.rax_3 < -110 THEN
+                    outputMsg := ("Robot Movement Limit" + "\0A");
+                    TPWrite outputMsg;
+                    errmsg := "Robot Movement Limit";
+                ELSEIF abs(jtarg.robax.rax_4) > 160 THEN
+                    outputMsg := ("Robot Movement Limit" + "\0A");
+                    TPWrite outputMsg;
+                    errmsg := "Robot Movement Limit";
+                ELSEIF abs(jtarg.robax.rax_5) > 120 THEN
+                    outputMsg := ("Robot Movement Limit" + "\0A");
+                    TPWrite outputMsg;
+                    errmsg := "Robot Movement Limit";
+                ELSEIF abs(jtarg.robax.rax_1) > 400 THEN
                     outputMsg := ("Robot Movement Limit" + "\0A");
                     TPWrite outputMsg;
                     errmsg := "Robot Movement Limit";
                 ELSE
-                    inMotion := TRUE;
-                    MoveL rtarg,sspeed,fine,tSCup;
-                    inMotion := FALSE;
-                    
-                    !MoveAbsJ jtarg,sspeed,fine,tSCup;
                     outputMsg := ("Orienting end effector to: " + ValToStr(quat) + "\0A");
                     TPWrite outputMsg;
-                    errmsg := "Movement Successful";
+                    errmsg := "Movement Okay";
+                    
+                    inMotion := TRUE;
+                    MoveL rtarg,sspeed,fine,tSCup;
+                    inMotion := FALSE;  
+                
+!                IF myerr = ERR_ROBLIMIT THEN
+!                    outputMsg := ("Robot Movement Limit" + "\0A");
+!                    TPWrite outputMsg;
+!                    errmsg := "Robot Movement Limit";
+!                ELSE                   
+!                    outputMsg := ("Orienting end effector to: " + ValToStr(quat) + "\0A");
+!                    TPWrite outputMsg;
+!                    errmsg := "Movement Okay";
+                    
+!                    inMotion := TRUE;
+!                    MoveL rtarg,sspeed,fine,tSCup;
+!                    inMotion := FALSE;
+                    
+                    !MoveAbsJ jtarg,sspeed,fine,tSCup;
                 ENDIF
                 
             CASE "LINMDBAS":
@@ -275,13 +310,13 @@ MODULE MTRN4230_Move_Sample
                     TPWrite outputMsg;
                     errmsg := "Robot Movement Limit";
                 ELSE
+                    outputMsg := ("Linear mode, rel. base, axis " + ROBargs{2} + " in the " + ROBargs{3} + " direction" + "\0A");
+                    TPWrite outputMsg;
+                    errmsg := "Movement Okay";
+                    
                     inMotion := TRUE;
                     MoveL rtarg,sspeed,fine,tSCup;
                     inMotion := FALSE;
-                    
-                    outputMsg := ("Linear mode, rel. base, axis " + ROBargs{2} + " in the " + ROBargs{3} + " direction" + "\0A");
-                    TPWrite outputMsg;
-                    errmsg := "Movement Successful";
                 ENDIF
             
             CASE "LINMDEND":
@@ -311,13 +346,13 @@ MODULE MTRN4230_Move_Sample
                 IF myerr = ERR_ROBLIMIT THEN
                     errmsg := "Robot Movement Limit";
                 ELSE
+                    outputMsg := ("Linear mode, rel. EE, axis " + ROBargs{2} + " in the " + ROBargs{3} + " direction" + "\0A");
+                    TPWrite outputMsg;
+                    errmsg := "Movement Okay";
+                    
                     inMotion := TRUE;
                     MoveL rtarg,sspeed,fine,tSCup;
                     inMotion := FALSE;
-                                    
-                    outputMsg := ("Linear mode, rel. EE, axis " + ROBargs{2} + " in the " + ROBargs{3} + " direction" + "\0A");
-                    TPWrite outputMsg;
-                    errmsg := "Movement Successful";
                 ENDIF
                    
             ENDTEST
