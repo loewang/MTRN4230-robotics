@@ -238,9 +238,11 @@ MODULE MTRN4230_Server_Sample
     
     TRAP errMessageTrap
         IF INTNO = errmessage THEN
-            ! Display error message
-            SocketSend client_socket \Str:=(errmsg+ "\0A");
-            errmsg := ""; ! Clear error message after being displayed
+            IF errmsg <> "" THEN
+                ! Display error message
+                SocketSend client_socket \Str:=(errmsg+ "\0A");
+                errmsg := ""; ! Clear error message after being displayed
+            ENDIF
         ENDIF
     ENDTRAP
     
