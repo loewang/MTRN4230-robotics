@@ -14,6 +14,128 @@ function GUI2RAPID()
     set(socket, 'ReadAsyncMode', 'continuous');
 
     if(~isequal(get(socket, 'Status'), 'open'))
+        try
+            fopen(socket);
+            app.ConnectionStatusLamp.Color = 'g';
+        catch
+            fprintf('Could not open TCP connection to %s on port %d\n',robot_IP_address, robot_port);
+            app.ConnectionStatusLamp.Color = 'r';
+        end
+    end
+
+    while(1)
+        if(~isequal(get(socket, 'Status'), 'open'))
+            fprintf('Could not open TCP connection to %s on port %d\n',robot_IP_address, robot_port);
+            app.ConnectionStatusLamp.Color = 'r';
+        end
+        
+        while(isequal(get(socket, 'Status'), 'open'))
+            
+            if(app.QuitButton_Pressed)
+                break;
+            end
+
+            if(app.DirectionSwitch_Changed)
+                SwitchCommand(app.DirectionSwitch.Value,socket,'Forward','CONVDIRE 0','CONVDIRE 1')
+                app.DirectionSwitch_Changed = 0;
+            end 
+
+            pause(0.1);
+
+            if(app.PumpSwitch_Changed)
+                SwitchCommand(app.PumpSwitch.Value,socket,'On','VACUUMOF','VACUUMON')
+                app.PumpSwitch_Changed = 0;
+            end     
+
+            pause(0.1);
+
+            if(app.ConRunButton_Pressed)
+                ToggleCommand(app.ConRunButton.Value,socket,'CONVEYOF','CONVEYON')
+                app.ConRunButton_Pressed = 0;
+            end     
+
+            pause(0.1);
+
+            if(app.VacRunButton_Pressed)
+                ToggleCommand(app.VacRunButton.Value,socket,'SETSOLEN 0','SETSOLEN 1')
+                app.VacRunButton_Pressed = 0;
+            end     
+
+            pause(0.1);
+
+            if(app.MovetoHomePositionButton_Pressed)
+                ToggleCommand(app.ConRunButton.Value,socket,'SETPOSES -90,0,0,0,0,0','SETPOSES -90,0,0,0,0,0')
+                app.MovetoHomePositionButton_Pressed = 0;
+            end     
+
+            pause(0.1);
+        end
+        
+        if(app.ReconnectButton_Pressed)
+            try
+                fopen(socket);
+                app.ConnectionStatusLamp.Color = 'g';
+            catch
+                disp('Reconnection Failed');
+                app.ConnectionStatusLamp.Color = 'r';
+            end
+            app.ReconnectButton_Pressed = 0;
+        end
+        
+        if(app.QuitButton_Pressed)
+            app.delete();
+            break;
+        end
+        
+        pause(1);
+    end
+    disp('IRB120 Session Ended');
+end
+
+function SwitchCommand(Switch,socket,state1,command0,command1)   
+    if(strcmp(Switch,state1))
+        fwrite(socket,command1);
+        disp(command1);
+    else
+        fwrite(socket,command0);
+        disp(command0);
+    end
+end
+
+function ToggleCommand(Toggle,socket,command0,command1)
+    if(Toggle == 1)
+        fwrite(socket,command1);
+        disp(command1);
+    else
+        fwrite(socket,command0);
+        disp(command0);
+    end
+end
+
+function Val = CheckToggleButtonChange(socket,Tbutton,prevVal,command0,command1)
+    TbuttVal = Tbutton;
+    pause(0.2);
+    
+    if(TbuttVal~=prevVal)
+        if(TbuttVal == 1)
+            fwrite(socket, command1);
+            disp(command1);
+            pause(0.1);
+        else
+            fwrite(socket, command0);
+            disp(command0);
+            pause(0.1);
+        end
+    end
+    Val = buttVal;
+end
+
+function Val = ReconnectButtonChange(app,socket,button,prevVal)
+    buttVal = button;
+    pause(0.2);
+    
+    if(buttVal~=prevVal)
+        f(~isequal(get(socket, 'Status'), 'open'))
         fopen(socket);
         app.ConnectionStatusLamp.Color = 'g';
     end
@@ -22,51 +144,8 @@ function GUI2RAPID()
         warning(['Could not open TCP connection to ', robot_IP_address, ' on port ', robot_port]);
         sprintf('Could not open TCP connection to %s on port %s',robot_IP_address, robot_port);
         app.ConnectionStatusLamp.Color = 'r';
-        return;
     end
-
-    PrevConDir = 'Backward';
-    PrevVacRun = 'Off';
-    PrevMvtoHom = 0;
- 
-    while(isequal(get(socket, 'Status'), 'open'))
-
-        PrevConDir = CheckSwitchChange(socket,app.DirectionSwitch.Value,PrevConDir,'Forward','CONVDIRE 0','CONVDIRE 1');
-
-        MvtoHom = app.MovetoHomePositionButton.Value;
-        pause(0.2);
-        if(MvtoHom~=PrevMvtoHom)
-            if(MvtoHom==1)
-                fwrite(socket, 'SETPOSES -90,0,0,0,0,0');
-                disp('SETPOSES -90,0,0,0,0,0');
-                pause(0.1);
-            end
-            PrevMvtoHom = MvtoHom;
-        end
-
-        PrevVacRun = CheckSwitchChange(socket,app.PumpSwitch.Value,PrevVacRun,'On','VACUUMOF','VACUUMON');
-
-    end
-
-    disp('Disconnected');
-    app.ConnectionStatusLamp.Color = 'r';
-end
-
-function Val = CheckSwitchChange(socket,button,prevVal,state1,command0,command1)
-    buttVal = button;
-    pause(0.2);
-    
-    if(~strcmp(buttVal,prevVal))
-        if(strcmp(buttVal,state1))
-            fwrite(socket, command1);
-            disp(command1);
-            pause(0.1);
-        else
-            fwrite(socket, command0);
-            disp(command0);
-            pause(0.1);
-        end   
-    end
+      
     Val = buttVal;
 end
 
