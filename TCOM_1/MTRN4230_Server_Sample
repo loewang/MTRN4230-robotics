@@ -4,7 +4,8 @@ MODULE MTRN4230_Server_Sample
 
     VAR socketdev client_socket; ! Used to communicate with MATLAB
     VAR string args{8}; ! Used to contain the commands and variables sent from MATLAB
-    PERS string ROBargs{8}; ! Movement commands are copied and accessible by Move_Sample
+    PERS string ROBargs{8}; ! Movement commands are copied and accessible by Move_Sample\
+    PERS speeddata sspeed;
     PERS bool flag; ! Flag is set to TRUE when a command is received
     PERS string errmsg; ! Used to contain any error messages caught in Move_Sample
     PERS string jointAngles; ! Contains current joint angles
@@ -39,6 +40,8 @@ MODULE MTRN4230_Server_Sample
         VAR num set; ! For setting values for I/Os
         
         flag:= FALSE; ! Initialise the flag to be false
+        StartMove;
+        sspeed := v100;
         
         ListenForAndAcceptConnection; ! Connect with MATLAB       
         
@@ -49,6 +52,8 @@ MODULE MTRN4230_Server_Sample
             SocketSend client_socket \Str:=(errmsg+ "\0A");
             errmsg := ""; ! Clear error message after being displayed
         ENDIF
+        
+        args := ["","","","","","","",""];
             
         ! Receive command string from the MATLAB
         SocketReceive client_socket \Str:=received_str;
@@ -78,9 +83,9 @@ MODULE MTRN4230_Server_Sample
             args{counter} := StrPart(received_str,comma_pos_1+1,StrLen(received_str)-comma_pos_1);
             
             ! To avoid movement commands being overwritten by server commands, we copy into the ROBarg array
-	    IF args{3} <> "" THEN ! Only copy if it isn't a I/O command
-                ROBargs := args;
-                args{1} := "";
+            IF args{3} <> "" THEN ! Only copy if it isn't a I/O command
+                    ROBargs := args;
+                    args{1} := "";
             ENDIF
             
             ! Set flag to TRUE to indicate the command has been received
@@ -91,6 +96,23 @@ MODULE MTRN4230_Server_Sample
         ! Server Commands - I/O Setting, Status Display
         
         TEST args{1}
+        CASE "SETSPEED":
+            TEST args{2}
+            
+            CASE "v10": ! Fine
+                sspeed := v10;
+            
+            CASE "v50": ! Slow
+                sspeed := v50;
+            
+            CASE "v100": ! Medium
+                sspeed := v100;
+                
+            CASE "v200": ! Fast
+                sspeed := v200;
+            
+            ENDTEST
+        
         CASE "VACUUMON" : ! VacRun set to 1
             TurnVacOn;
             TPWrite "Vacuum On";
@@ -145,6 +167,9 @@ MODULE MTRN4230_Server_Sample
             
         CASE "EEORIENT" : ! Send end effector orientation to MATLAB
             SocketSend client_socket \Str:=eeOri+"\0A";
+            
+        CASE "INMOTION" : ! Send inMotion status
+            SocketSend client_socket \Str:=ValToStr(inMotion)+"\0A";
             
         ! I/O Status Request Commands
         
