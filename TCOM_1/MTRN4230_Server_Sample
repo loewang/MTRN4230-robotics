@@ -42,6 +42,8 @@ MODULE MTRN4230_Server_Sample
         flag:= FALSE; ! Initialise the flag to be false
         StartMove;
         sspeed := v100;
+        args := ["","","","","","","",""];
+        ROBargs := ["","","","","","","",""];
         
         ListenForAndAcceptConnection; ! Connect with MATLAB       
         
