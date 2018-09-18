@@ -12,10 +12,11 @@ function GUI2RAPID()
 
     socket = tcpip(robot_IP_address, robot_port);
     set(socket, 'ReadAsyncMode', 'continuous');
-
+    
     if(~isequal(get(socket, 'Status'), 'open'))
         try
             fopen(socket);
+            disp('Connected');
             app.ConnectionStatusLamp.Color = 'g';
         catch
             fprintf('Could not open TCP connection to %s on port %d\n',robot_IP_address, robot_port);
@@ -34,46 +35,106 @@ function GUI2RAPID()
             if(app.QuitButton_Pressed)
                 break;
             end
+            
+            % Get Robot status update
+            
+            fwrite(socket,'GTCONSTA');
+            str = ReceiveString(socket);
+            if(strcmp(str,'1'))
+                app.ConveyorStatusLamp.Color = 'g';
+            else
+                app.ConveyorStatusLamp.Color = 'r';
+            end
+            
+            fwrite(socket,'GTVACRUN');
+            str = ReceiveString(socket);
+            if(strcmp(str,'1'))
+                app.PumpLamp.Color = 'g';
+            else
+                app.PumpLamp.Color = 'r';
+            end
+            
+            fwrite(socket,'GTVACSOL');
+            str = ReceiveString(socket);
+            if(strcmp(str,'1'))
+                app.VacSolLamp.Color = 'g';
+            else
+                app.VacSolLamp.Color = 'r';
+            end
 
             if(app.DirectionSwitch_Changed)
-                SwitchCommand(app.DirectionSwitch.Value,socket,'Forward','CONVDIRE 0','CONVDIRE 1')
+                SwitchCommand(app.DirectionSwitch.Value,socket,'Forward','CONVDIRE 0','CONVDIRE 1');
                 app.DirectionSwitch_Changed = 0;
             end 
 
-            pause(0.1);
-
             if(app.PumpSwitch_Changed)
-                SwitchCommand(app.PumpSwitch.Value,socket,'On','VACUUMOF','VACUUMON')
+                SwitchCommand(app.PumpSwitch.Value,socket,'On','VACUUMOF','VACUUMON');
                 app.PumpSwitch_Changed = 0;
             end     
 
-            pause(0.1);
-
             if(app.ConRunButton_Pressed)
-                ToggleCommand(app.ConRunButton.Value,socket,'CONVEYOF','CONVEYON')
+                ToggleCommand(app.ConRunButton.Value,socket,'CONVEYOF','CONVEYON');
                 app.ConRunButton_Pressed = 0;
             end     
 
-            pause(0.1);
-
-            if(app.VacRunButton_Pressed)
-                ToggleCommand(app.VacRunButton.Value,socket,'SETSOLEN 0','SETSOLEN 1')
+            if(app.VacRunButton_Pressed)       
+                ToggleCommand(app.VacRunButton.Value,socket,'SETSOLEN 0','SETSOLEN 1');
                 app.VacRunButton_Pressed = 0;
             end     
 
-            pause(0.1);
-
             if(app.MovetoHomePositionButton_Pressed)
-                ToggleCommand(app.ConRunButton.Value,socket,'SETPOSES -90,0,0,0,0,0','SETPOSES -90,0,0,0,0,0')
+                MovetoHomePositionButtonCommand(app,socket);
                 app.MovetoHomePositionButton_Pressed = 0;
             end     
+            
+            if(app.JogSpeedKnob_Changed)
+                KnobCommand(app.JogSpeedKnob.Value, socket)
+                app.JogSpeedKnob_Changed = 0;
+            end
 
-            pause(0.1);
+            if(app.XButton_Pressed)
+                fwrite(socket, 'LINMDBAS X,pos');
+                disp('LINMDBAS X,pos');
+                app.XButton_Pressed = 0;
+            end
+
+            if(app.XButton_2_Pressed)              
+              	fwrite(socket, 'LINMDBAS X,neg');
+                disp('LINMDBAS X,neg');              
+                app.XButton_2_Pressed = 0;
+            end
+
+            if(app.YButton_Pressed)
+              	fwrite(socket, 'LINMDBAS Y,pos');
+                disp( 'LINMDBAS Y,pos');              
+                app.YButton_Pressed = 0;
+            end
+
+            if(app.YButton_3_Pressed)             
+              	fwrite(socket, 'LINMDBAS Y,neg'); 
+                disp('LINMDBAS Y,neg');
+                app.YButton_3_Pressed = 0;
+            end
+
+            if(app.ZButton_Pressed)             
+              	fwrite(socket, 'LINMDBAS Z,pos'); 
+                disp('LINMDBAS Z,pos');
+                app.ZButton_Pressed = 0;
+            end
+
+            if(app.ZButton_2_Pressed)               
+              	fwrite(socket, 'LINMDBAS Z,neg');  
+                disp('LINMDBAS Z,neg');
+                app.ZButton_2_Pressed = 0;
+            end
+            
+            pause(0.01);
         end
         
         if(app.ReconnectButton_Pressed)
             try
                 fopen(socket);
+                disp('Connected');
                 app.ConnectionStatusLamp.Color = 'g';
             catch
                 disp('Reconnection Failed');
@@ -90,6 +151,13 @@ function GUI2RAPID()
         pause(1);
     end
     disp('IRB120 Session Ended');
+end
+
+function [str] =  ReceiveString(socket)
+    data = fgetl(socket);
+    %str = strcat(char(data),'\n');
+    str = char(data);
+%     disp(str);
 end
 
 function SwitchCommand(Switch,socket,state1,command0,command1)   
@@ -112,41 +180,33 @@ function ToggleCommand(Toggle,socket,command0,command1)
     end
 end
 
-function Val = CheckToggleButtonChange(socket,Tbutton,prevVal,command0,command1)
-    TbuttVal = Tbutton;
-    pause(0.2);
-    
-    if(TbuttVal~=prevVal)
-        if(TbuttVal == 1)
-            fwrite(socket, command1);
-            disp(command1);
-            pause(0.1);
-        else
-            fwrite(socket, command0);
-            disp(command0);
-            pause(0.1);
-        end
+function KnobCommand(speedValue, socket)
+
+    switch speedValue
+            case 'Fine'  
+                fwrite(socket, 'SETSPEED v10');
+                disp('Fine');
+            case 'Slow'
+                fwrite(socket, 'SETSPEED v50');
+                disp('Slow');
+            case 'Medium'
+                fwrite(socket, 'SETSPEED v100');
+                disp('Medium');
+            case 'Fast'
+                fwrite(socket, 'SETSPEED v200');
+                disp('Fast');
     end
-    Val = buttVal;
 end
 
-function Val = ReconnectButtonChange(app,socket,button,prevVal)
-    buttVal = button;
-    pause(0.2);
-    
-    if(buttVal~=prevVal)
-        f(~isequal(get(socket, 'Status'), 'open'))
-        fopen(socket);
-        app.ConnectionStatusLamp.Color = 'g';
+function MovetoHomePositionButtonCommand(app,socket)
+    if(app.MovetoHomePositionButton.Value == 1)
+        fwrite(socket,'SETPOSES -90,0,0,0,0,0');
+        disp('SETPOSES -90,0,0,0,0,0');
+        
+    else
+        fwrite(socket,'SETPOSES -90,0,0,0,0,0');
+        disp('SETPOSES -90,0,0,0,0,0');
     end
-
-    if(~isequal(get(socket, 'Status'), 'open'))
-        warning(['Could not open TCP connection to ', robot_IP_address, ' on port ', robot_port]);
-        sprintf('Could not open TCP connection to %s on port %s',robot_IP_address, robot_port);
-        app.ConnectionStatusLamp.Color = 'r';
-    end
-      
-    Val = buttVal;
 end
 
 % % DIO
