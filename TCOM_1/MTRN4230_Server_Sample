@@ -78,7 +78,7 @@ MODULE MTRN4230_Server_Sample
             args{counter} := StrPart(received_str,comma_pos_1+1,StrLen(received_str)-comma_pos_1);
             
             ! To avoid movement commands being overwritten by server commands, we copy into the ROBarg array
-            IF args{2} <> "1" OR args{2} <> "0" THEN ! Only copy if it isn't a I/O command
+	    IF args{3} <> "" THEN ! Only copy if it isn't a I/O command
                 ROBargs := args;
                 args{1} := "";
             ENDIF
