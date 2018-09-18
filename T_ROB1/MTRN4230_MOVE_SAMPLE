@@ -4,19 +4,25 @@ MODULE MTRN4230_Move_Sample
     PERS string ROBargs{8};
     PERS bool flag;
     PERS bool quit;
+    PERS speeddata sspeed;
     PERS string jointAngles;
     PERS string eePos;
     PERS string eeOri;
     PERS bool motionCancel;
     PERS bool inMotion;
     VAR intnum cancel;
+    VAR intnum execErr;
     
     ! The Main procedure. When you select 'PP to Main' on the FlexPendant, it will go to this procedure.
     PROC Initialise()
         motionCancel := FALSE;
-        StartMove;
+        
         CONNECT cancel WITH cancelTrap;
         IPers motionCancel, cancel;
+        
+        CONNECT execErr WITH execErrTrap;
+        ISignalDO DO_EXEC_ERR, 1, execErr;
+        
     ENDPROC
     
     PROC Main()
@@ -45,7 +51,6 @@ MODULE MTRN4230_Move_Sample
         VAR robjoint pose;
         VAR jointtarget jtarg;
         VAR jointtarget jcurr;
-        VAR speeddata sspeed := v100;
         VAR num joint;
         VAR num jogdir;
         VAR orient quat;
@@ -132,25 +137,7 @@ MODULE MTRN4230_Move_Sample
                     TPWrite outputMsg;
                 ENDIF
                 
-            CASE "SETSPEED":
-                TEST ROBargs{2}
-                
-                CASE "v10": ! Fine
-                    sspeed := v10;
-                
-                CASE "v50": ! Slow
-                    sspeed := v50;
-                
-                CASE "v100": ! Medium
-                    sspeed := v100;
-                    
-                CASE "v200": ! Fast
-                    sspeed := v200;
-                
-                ENDTEST
-                
-                outputMsg := ("Speed set to: " + ValToStr(sspeed) + "\0A");
-                TPWrite outputMsg;
+            
                 
             CASE "JOGJOINT":
                 ok := StrToVal(ROBargs{2}, joint);
@@ -315,10 +302,20 @@ MODULE MTRN4230_Move_Sample
         IF INTNO = cancel THEN
             StorePath;
             ClearPath;
-            ReceiveCommandLoop;
             motionCancel := FALSE;
+            ReceiveCommandLoop;
         ENDIF
         
+    ENDTRAP
+    
+    TRAP execErrTrap
+        IF INTNO = execErr THEN
+            StopMove;
+            StopMoveReset;
+            StorePath;
+            ClearPath;
+            ReceiveCommandLoop;
+        ENDIF
     ENDTRAP
         
     PROC MoveJSample()
