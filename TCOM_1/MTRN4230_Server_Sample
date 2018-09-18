@@ -13,7 +13,8 @@ MODULE MTRN4230_Server_Sample
     PERS string eeOri; ! Contains current end effector orientation
     PERS bool motionCancel; ! Changing this will activate the Trap routine which cancels the current motion
     PERS bool inMotion; ! Indicates whether or not the robot is in motion
-    
+    VAR intnum errmessage;
+            
     VAR string host := "127.0.0.1";
     CONST num port := 1025;
     
@@ -46,16 +47,13 @@ MODULE MTRN4230_Server_Sample
         ROBargs := ["","","","","","","",""];
         errmsg := "";
         
+        CONNECT errmessage WITH errMessageTrap;
+        IPers errmsg, errmessage;
+        
         ListenForAndAcceptConnection; ! Connect with MATLAB       
         
         WHILE TRUE DO
-            
-        ! Display error message if there is one    
-        IF errmsg <> "" THEN
-            SocketSend client_socket \Str:=(errmsg+ "\0A");
-            errmsg := ""; ! Clear error message after being displayed
-        ENDIF
-        
+                   
         args := ["","","","","","","",""];
             
         ! Receive command string from the MATLAB
@@ -95,7 +93,7 @@ MODULE MTRN4230_Server_Sample
             ENDIF
             
         ENDIF
- 
+        
         ! Server Commands - I/O Setting, Status Display
         
         TEST args{1}
@@ -237,6 +235,14 @@ MODULE MTRN4230_Server_Sample
             ENDIF
 		
     ENDPROC
+    
+    TRAP errMessageTrap
+        IF INTNO = errmessage THEN
+            ! Display error message
+            SocketSend client_socket \Str:=(errmsg+ "\0A");
+            errmsg := ""; ! Clear error message after being displayed
+        ENDIF
+    ENDTRAP
     
     PROC client_recover()
         SocketClose client_socket;
