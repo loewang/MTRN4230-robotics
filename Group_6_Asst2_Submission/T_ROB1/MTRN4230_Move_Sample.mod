@@ -89,7 +89,7 @@ MODULE MTRN4230_Move_Sample
                     TPWrite outputMsg;
                 ! Else perform the movement command and indicate that the movement is okay
                 ELSE
-                    outputMsg := ("Moving to: " + ValToStr(coord) + "\0A");
+                    outputMsg := ("Moving to: " + ValToStr(coord) + "rel. to pTableHome" + "\0A");
                     TPWrite outputMsg;
                     errmsg := "Movement Okay";
                     
@@ -106,7 +106,7 @@ MODULE MTRN4230_Move_Sample
                 
                 jtarg := CalcJointT(Offs(pConvHome, coord.x, coord.y, coord.z),tSCup \ErrorNumber:=myerr);
                 IF myerr = ERR_ROBLIMIT THEN
-                    outputMsg := ("Robot Movement Limit" + "\0A");
+                    outputMsg := ("Robot Movement Limit" + "rel. to pConvHome" +"\0A");
                     TPWrite outputMsg;
                     errmsg := "Robot Movement Limit";
                 ELSE
