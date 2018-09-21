@@ -1,0 +1,298 @@
+MODULE MTRN4230_Server_Sample    
+    
+    VAR socketdev client_socket; ! Used to communicate with MATLAB
+    VAR string args{8}; ! Used to contain the commands and variables sent from MATLAB
+    PERS string ROBargs{8}; ! Movement commands are copied and accessible by Move_Sample\
+    PERS speeddata sspeed; ! Variable used to control movement speeds
+    PERS bool flag; ! Flag is set to TRUE when a command is received
+    PERS string errmsg; ! Used to contain any error messages caught in Move_Sample
+    PERS string jointAngles; ! Contains current joint angles
+    PERS string eePos; ! Contains current end effector position
+    PERS string eeOri; ! Contains current end effector orientation
+    PERS bool motionCancel; ! Changing this will activate the Trap routine which cancels the current motion
+    PERS bool inMotion; ! Indicates whether or not the robot is in motion
+    VAR bool socketTimeout; ! Indicates whether or not the socket has been timed out
+    VAR intnum errmessage; ! Interrupt number connected to changes in the errmsg string variable
+            
+    VAR string host := "127.0.0.1";
+    CONST num port := 1025;
+    
+    PROC Main ()
+        IF RobOS() THEN
+            host := "192.168.125.1"; ! IP Address for the lab robot
+        ELSE
+            host := "127.0.0.1"; ! Local IP Address for virtual robot
+        ENDIF
+        MainServer;
+        
+    ENDPROC
+
+    PROC MainServer()
+        
+        VAR string received_str; ! Stores command and variable string sent from MATLAB
+        
+        VAR num comma_pos_1; ! Keeps track of the position before the argument
+        VAR num comma_pos_2; ! Keeps track of the position after the argument
+        VAR num command_len := 8; ! Commands are 8 characters long
+        
+        VAR num counter; ! Keeps track of the argument number
+        VAR bool ok; ! Bool variable just for StrToVal
+        VAR num set; ! For setting values for I/Os
+        
+        ! Initialisation
+        flag:= FALSE; ! Initialise the flag to be false
+        StartMove; ! Make sure that any previous StopMove commands are corrected
+        sspeed := v100; ! Set initial speed to v100
+        args := ["","","","","","","",""]; ! Clear args array
+        ROBargs := ["","","","","","","",""]; ! Clear ROBargs array
+        errmsg := ""; ! Clear errmsg string
+        socketTimeout := FALSE;
+        
+        ! Connect the errMessageTrap routine which runs when errmsg string changes value
+        CONNECT errmessage WITH errMessageTrap;
+        IPers errmsg, errmessage;
+        
+        ListenForAndAcceptConnection; ! Connect with MATLAB       
+        
+        WHILE TRUE DO
+                   
+        args := ["","","","","","","",""]; ! Reset args every loop
+            
+        ! Receive command string from the MATLAB
+        SocketReceive client_socket \Str:=received_str;
+        
+        ! Begin splitting string into individual command and arguments
+        args{1} := StrPart(received_str,1,command_len); 
+        
+        IF StrLen(received_str) > command_len THEN
+        
+            ! Start going through received arguments, separated by commas
+            comma_pos_1 := command_len+1;
+            comma_pos_2:= StrFind(received_str,comma_pos_1+1,","); ! Find the first comma
+            
+            counter := 2; ! First argument goes into second position of args array
+            
+            ! Loop while a comma is detected i.e. while not on last argument
+            WHILE comma_pos_2 <> StrLen(received_str)+1 DO
+            
+                args{counter} := StrPart(received_str,comma_pos_1+1,comma_pos_2-(comma_pos_1+1)); ! Copy the argument
+                comma_pos_1 := comma_pos_2; ! Update starting argument position
+                comma_pos_2:= StrFind(received_str,comma_pos_1+1,","); ! Find the next comma
+                counter := counter + 1; ! Increment counter
+                
+            ENDWHILE
+            
+            ! Save last argument
+            args{counter} := StrPart(received_str,comma_pos_1+1,StrLen(received_str)-comma_pos_1);
+            
+            ! To avoid movement commands being overwritten by server commands, we copy into the ROBarg array
+            IF args{3} <> "" THEN ! Only copy if it isn't a I/O command
+                ROBargs := args;
+                args{1} := ""; ! clear args{1} just in case, so no server commands are run
+                
+                ! Set flag to TRUE to indicate the command has been received
+                flag := TRUE;
+            ENDIF
+            
+        ENDIF
+        
+        ! Server Commands - I/O Setting, Status Display
+        
+        ! Check what command was receieved
+        TEST args{1} 
+        
+        CASE "SETSPEED": ! Set speed of motion tasks
+            TEST args{2}
+            
+            CASE "v10": ! Fine
+                sspeed := v10;
+            
+            CASE "v50": ! Slow
+                sspeed := v50;
+            
+            CASE "v100": ! Medium
+                sspeed := v100;
+                
+            CASE "v200": ! Fast
+                sspeed := v200;
+            
+            ENDTEST
+        
+        CASE "VACUUMON" : ! VacRun set to 1
+            TurnVacOn;
+            TPWrite "Vacuum On";
+            
+        CASE "VACUUMOF" : ! VacRun set to 0
+            TurnVacOff;
+            TPWrite "Vacuum Off";
+            
+        CASE "SETSOLEN" : ! VacSol set to specified value 
+            ok := StrToVal(args{2}, set);
+            SetVacSol(set);
+            TPWrite ("Vacuum Solenoid " + args{2});
+            
+        CASE "CONVEYON" : ! ConRun set to 1, only if ConStat is 1
+            TurnConOnSafely;
+            TPWrite "Conveyor On";
+
+        CASE "CONVEYOF" : ! ConRun set to 0
+            TurnConOff; 
+            TPWrite "Conveyor Off";
+            
+        CASE "CONVDIRE" : ! ConDir set to specified value
+            ok := StrToVal(args{2}, set);
+            SetConDir(set);
+            TPWrite ("Conveyor Direction " + args{2});
+            
+        CASE "ROBPAUSE" : ! Pauses current motion task
+            StopMove;
+            inMotion := FALSE;
+            TPWrite "Robot Motion Paused";
+            
+        CASE "ROBRESME" : ! Resumes previous motion task
+            StartMove;
+            TPWrite "Robot Motion Resumed";
+            
+        CASE "ROBCANCL" : ! Cancels previous motion task
+            IF inMotion = FALSE THEN
+                StopMoveReset;
+                motionCancel := TRUE;
+                TPWrite "Robot Motion Cancelled";
+            ELSE
+                TPWrite "Cannot Cancel Motion without Pause";    
+            ENDIF
+            
+        ! Robot Status Request Commands
+            
+        CASE "JNTANGLE" : ! Send joint angles to MATLAB
+            SocketSend client_socket \Str:=jointAngles+"\0A";
+            
+        CASE "EEPOSITN" : ! Send end effector position to MATLAB
+            SocketSend client_socket \Str:=eePos+"\0A";
+            
+        CASE "EEORIENT" : ! Send end effector orientation to MATLAB
+            SocketSend client_socket \Str:=eeOri+"\0A";
+            
+        CASE "INMOTION" : ! Send inMotion status
+            SocketSend client_socket \Str:=ValToStr(inMotion)+"\0A";
+            
+        CASE "SCKTTIME" : ! Send socketTimeout status
+            SocketSend client_socket \Str:=ValToStr(socketTimeout)+"\0A";
+            
+        ! I/O Status Request Commands
+        
+        CASE "GTCONSTA" : ! Send ConStat status
+            SocketSend client_socket \Str:=ValToStr(DI10_1)+"\0A";
+        
+        CASE "GTVACRUN" : ! Send VacRun status
+            SocketSend client_socket \Str:=ValToStr(DO10_1)+"\0A";
+        
+        CASE "GTVACSOL" : ! Send VacSol status
+            SocketSend client_socket \Str:=ValToStr(DO10_2)+"\0A";
+            
+        CASE "GTCONRUN" : ! Send ConRun status
+            SocketSend client_socket \Str:=ValToStr(DO10_3)+"\0A";
+            
+        CASE "GTCONDIR" : ! Send ConDir status
+            SocketSend client_socket \Str:=ValToStr(DO10_4)+"\0A";
+            
+        CASE "GTMOTRON" : ! Send MOTOR_ON status - 0 = Motor on button being pressed
+            SocketSend client_socket \Str:=ValToStr(DI_MOTOR_ON)+"\0A";
+        
+        CASE "GTESTOP1" : ! Send ESTOP status - 0 = ESTOP circuit triggered
+            SocketSend client_socket \Str:=ValToStr(DO_ESTOP)+"\0A";
+            
+        CASE "GTESTOP2" : ! Send ESTOP2 status - 1 = System in emergency stop state
+            SocketSend client_socket \Str:=ValToStr(DO_ESTOP2)+"\0A";
+            
+        CASE "GTEXCERR" : ! Send EXEC_ERR status - 1 = Robot stopped due to program execution error
+            SocketSend client_socket \Str:=ValToStr(DO_EXEC_ERR)+"\0A";
+            
+        CASE "GTHDENBL" : ! Send HOLD_TO_ENABLE status - 1 = Robot movement enabled
+            SocketSend client_socket \Str:=ValToStr(DO_HOLD_TO_ENABLE)+"\0A";
+            
+        CASE "GTLTCURT" : ! Send LIGHT_CURTAIN status - 0 = Light curtain is running
+            SocketSend client_socket \Str:=ValToStr(DO_LIGHT_CURTAIN)+"\0A";
+            
+        CASE "GTMOTSUP" : ! Send MOTION_SUP_TRIG status - 1 = Motion supervision triggered
+            SocketSend client_socket \Str:=ValToStr(DO_MOTION_SUP_TRIG)+"\0A";
+            
+        CASE "GTMOTONS" : ! Send MOTOR_ON_STATE status - 1 = Controller is in motor on state
+            SocketSend client_socket \Str:=ValToStr(DO_MOTOR_ON_STATE)+"\0A";
+            
+        CASE "GTTROBRN" : ! Send TROB_RUNNING status - 1 = TROB task is running
+            SocketSend client_socket \Str:=ValToStr(DO_TROB_RUNNING)+"\0A";
+
+        DEFAULT : ! None
+            
+        ENDTEST
+        
+    ENDWHILE
+
+        CloseConnection;
+        
+        ERROR
+            IF ERRNO=ERR_SOCK_TIMEOUT THEN
+                socketTimeout := TRUE; 
+                RETRY;
+            ELSEIF ERRNO=ERR_SOCK_CLOSED THEN
+                client_recover;
+                RETRY;
+            ELSE
+                ! No error recovery handling
+            ENDIF
+		
+    ENDPROC
+    
+    TRAP errMessageTrap
+        IF INTNO = errmessage THEN
+            IF errmsg <> "" THEN
+                ! Display error message
+                SocketSend client_socket \Str:=(errmsg+ "\0A");
+                errmsg := ""; ! Clear error message after being displayed
+            ENDIF
+        ENDIF
+    ENDTRAP
+    
+    PROC client_recover()
+        SocketClose client_socket;
+        SocketCreate client_socket;
+        SocketConnect client_socket, host, port;
+        
+        ERROR
+            IF ERRNO=ERR_SOCK_TIMEOUT THEN
+                RETRY;
+            ELSEIF ERRNO=ERR_SOCK_CLOSED THEN
+                RETURN;
+            ELSE
+            ! No error recovery handling
+            ENDIF
+    ENDPROC
+    
+    PROC ListenForAndAcceptConnection()
+        
+        ! Create the socket to listen for a connection on.
+        VAR socketdev welcome_socket;
+        SocketCreate welcome_socket;
+        
+        ! Bind the socket to the host and port.
+        SocketBind welcome_socket, host, port;
+        
+        ! Listen on the welcome socket.
+        SocketListen welcome_socket;
+        
+        ! Accept a connection on the host and port.
+        SocketAccept welcome_socket, client_socket \Time:=WAIT_MAX;
+        
+        ! Close the welcome socket, as it is no longer needed.
+        SocketClose welcome_socket;
+        
+    ENDPROC
+    
+    ! Close the connection to the client.
+    PROC CloseConnection()
+        SocketClose client_socket;
+    ENDPROC
+    
+
+ENDMODULE
