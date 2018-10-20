@@ -1,10 +1,13 @@
-function GUI2RAPID()
+function Ass3GUI2RAPID()
     clc; clear; close all;
 
     %start GUI
     app = IRB120GUI();
     pause(0.5);
     disp('GUI OPEN');
+    
+    prevMoved = 0;
+    inmotion = 0;
     
     if(strcmp(app.ControlModeButtonGroup.SelectedObject.Text,'Robot'))
         robot_IP_address = '192.168.125.1';
@@ -33,15 +36,6 @@ function GUI2RAPID()
         end
     end
     
-    prevMoved = 0;
-    PrevConStat = 'g';
-    PrevMotorsON = 'g';
-    PrevEstop = 'g';
-    PrevExErr = 'g';
-    PrevMotEn = 'g';
-    PrevLightCurt = 'g';
-    PrevMotionSup = 'g';
-    
     while(1)
         if(~isequal(get(socket, 'Status'), 'open'))
             fprintf('Could not open TCP connection to %s on port %d\n',robot_IP_address, robot_port);
@@ -69,13 +63,8 @@ function GUI2RAPID()
             str = ReceiveString(socket);
             if(strcmp(str,'1'))
                 app.ConveyorStatusLamp.Color = 'g';
-                PrevConStat = 'g';
             else
                 app.ConveyorStatusLamp.Color = 'r';
-                if(PrevConStat == 'g')
-                    run('Message_ConveyorEnable.mlapp');
-                end
-                PrevConStat = 'r';
             end
             
             fwrite(socket,'GTVACRUN');
@@ -114,78 +103,48 @@ function GUI2RAPID()
             str = ReceiveString(socket);
             if(strcmp(str,'1'))
                 app.MotorsONLamp.Color = 'g';
-                PrevMotorsON = 'g';
             else
                 app.MotorsONLamp.Color = 'r';
-                if(PrevMotorsON == 'g')
-                    run('Message_MotorOff.mlapp');
-                end
-                PrevMotorsON = 'r';
             end
             
             fwrite(socket,'GTESTOP1');
             str = ReceiveString(socket);
             if(strcmp(str,'1'))
                 app.EmergencyStopLamp.Color = 'g';
-                PrevEstop = 'g';
             else
                 app.EmergencyStopLamp.Color = 'r';
-                if(PrevEstop == 'g')
-                    run('Message_eStop.mlapp');
-                end
-                PrevEstop = 'r';
             end
             
             fwrite(socket,'GTEXCERR');
             str = ReceiveString(socket);
             if(strcmp(str,'0'))
                 app.ExecutionErrorLamp.Color = 'g';
-                PrevExErr = 'g';
             else
                 app.ExecutionErrorLamp.Color = 'r';
-                if(PrevExErr == 'g')
-                    run('Message_ExcecutionError.mlapp');
-                end
-                PrevExErr = 'r';
             end
 
             fwrite(socket,'GTHDENBL');
             str = ReceiveString(socket);
             if(strcmp(str,'1'))
                 app.MotorsEnableLamp.Color = 'g';
-                PrevMotEn = 'g';
             else
                 app.MotorsEnableLamp.Color = 'r';
-                if(PrevMotEn == 'g')
-                    run('Message_HoldEnable.mlapp');
-                end
-                PrevMotEn = 'r';
             end
             
             fwrite(socket,'GTLTCURT');
             str = ReceiveString(socket);
             if(strcmp(str,'0'))
                 app.LightCurtainLamp.Color = 'g';
-                PrevLightCurt = 'g';
             else
                 app.LightCurtainLamp.Color = 'r';
-                if(PrevLightCurt == 'g')
-                    run('Message_LightCurtain.mlapp');
-                end
-                PrevLightCurt = 'r';
             end
             
             fwrite(socket,'GTMOTSUP');
             str = ReceiveString(socket);
             if(strcmp(str,'0'))
                 app.MotionSupervisionLamp.Color = 'g';
-                PrevMotionSup = 'g';
             else
                 app.MotionSupervisionLamp.Color = 'r';
-                if(PrevMotionSup == 'g')
-                    run('Message_MotionSupervision.mlapp');
-                end
-                PrevMotionSup = 'r';
             end
             
             fwrite(socket, 'JNTANGLE');
@@ -216,14 +175,18 @@ function GUI2RAPID()
             app.EEOriEditField_Z.Value = EEOri(3);
             
             fwrite(socket, 'INMOTION');
-            str = ReceiveString(socket);
-            
+            str = ReceiveString(socket);    
             if(strcmp(str,'FALSE'))
-                app.RobotReadyLamp.Color = 'g';
+                app.RobotReadyLamp.Color = 'g'; 
+                if(inmotion)
+                    app.MoveButton.Value = 0;
+                    inmotion = 0;
+                end
             else
                 app.RobotReadyLamp.Color = 'r';
+                inmotion = 1;
             end
-
+            
             if(app.DirectionSwitch_Changed)
                 SwitchCommand(app.DirectionSwitch.Value,socket,'Forward','CONVDIRE 0','CONVDIRE 1');
                 app.DirectionSwitch_Changed = 0;
@@ -395,53 +358,58 @@ function GUI2RAPID()
                 
                 app.Button_4_Pressed = 0;
             end
-            
-           if(app.MoveButton_Pressed)
-                
+           
+            if(app.MoveButton_Pressed)  
                 if(app.MoveButton.Value == 1)
                     if(prevMoved == 1)
                         % if move = 1 -> move
                         fwrite(socket, 'ROBRESME');
+                        disp('ROBRESME');
                         prevMoved = 0;
                     else
                         if(strcmp(app.InputMethodButtonGroup.SelectedObject.Text, 'Joint Angles'))
                             disp('Joint Angle Mode');
-
-                            fwrite(socket, sprintf('SETPOSES %f,%f,%f,%f,%f,%f',...
-                            app.JointAnglesEditField_q1.Value,app.JointAnglesEditField_q2.Value,...
-                            app.JointAnglesEditField_q3.Value, app.JointAnglesEditField_q4.Value,...
-                            app.JointAnglesEditField_q5.Value,app.JointAnglesEditField_q6.Value)); 
-                        end
+                            cmd = sprintf('SETPOSES %f,%f,%f,%f,%f,%f',...
+                                app.JointAnglesEditField_q1.Value,app.JointAnglesEditField_q2.Value,...
+                                app.JointAnglesEditField_q3.Value, app.JointAnglesEditField_q4.Value,...
+                                app.JointAnglesEditField_q5.Value,app.JointAnglesEditField_q6.Value);
+                            disp(cmd);
+                            fwrite(socket,cmd);
                         
-                        if(strcmp(app.InputMethodButtonGroup.SelectedObject.Text, 'Reorient End Effector'))
+                        elseif(strcmp(app.InputMethodButtonGroup.SelectedObject.Text, 'Reorient End Effector'))
                             disp('Reorient EE Mode');
-
-                            fwrite(socket, sprintf('EEORIENT %f,%f,%f,%f',...
-                            app.ReorientEndEffectorEditField.Value, app.ReorientEndEffectorEditField_2.Value, ...
-                            app.ReorientEndEffectorEditField_3.Value,  app.ReorientEndEffectorEditField_4.Value)); 
-                        end
+                            cmd = sprintf('EEORIENT %f,%f,%f,%f',...
+                                app.ReorientEndEffectorEditField.Value, app.ReorientEndEffectorEditField_2.Value, ...
+                                app.ReorientEndEffectorEditField_3.Value,  app.ReorientEndEffectorEditField_4.Value);
+                            disp(cmd);
+                            fwrite(socket,cmd);
                         
-                        if(strcmp(app.InputMethodButtonGroup.SelectedObject.Text, 'End Effector Position'))
+                        elseif(strcmp(app.InputMethodButtonGroup.SelectedObject.Text, 'End Effector Position'))
                             disp('EE Position Mode');
                             
                             if(strcmp(app.RelativeHomeDropDown.Value, 'Table'))
-                                fwrite(socket, sprintf('MVPOSTAB %f,%f,%f',...
+                                cmd = sprintf('MVPOSTAB %f,%f,%f',...
                                     app.EndEffectorPositionEditField_X.Value, app.EndEffectorPositionEditField_Y.Value,...
-                                    app.EndEffectorPositionEditField_Z.Value));
+                                    app.EndEffectorPositionEditField_Z.Value);
+                                disp(cmd);
+                                fwrite(socket,cmd);
                             else
-                                fwrite(socket, sprintf('MVPOSCON %f,%f,%f',...
+                                cmd = sprintf('MVPOSCON %f,%f,%f',...
                                     app.EndEffectorPositionEditField_X.Value, app.EndEffectorPositionEditField_Y.Value,...
-                                    app.EndEffectorPositionEditField_Z.Value));
+                                    app.EndEffectorPositionEditField_Z.Value);
+                                disp(cmd);
+                            	fwrite(socket,cmd);
                             end
-                        
+                            
                         end
-                        
-                    end 
-                else 
+                        prevMoved = 1;
+                    end
+                else
                     %if move = 0 -> pause
                     fwrite(socket, 'ROBPAUSE');
+                    disp('ROBPAUSE');
                 end
-                prevMoved = 1;
+                app.MoveButton_Pressed = 0;
                 pause(0.1);
             end
             
