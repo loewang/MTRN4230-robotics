@@ -10,11 +10,14 @@ MODULE MTRN4230_Move_Sample
     PERS string eeOri; ! Contains current end effector orientation 
     PERS bool motionCancel; ! Indicates whether the motion has been cancelled
     PERS bool inMotion; ! Indicates whether the robot is in motion
+    VAR bool initialised := FALSE; ! Indicates whether the robot has been initialised
     VAR intnum cancel; ! Interrupt number connected to motionCancel
     VAR intnum execErr; ! Interrupt number connected to DO_EXEC_ERR
     
     PROC Initialise()
         motionCancel := FALSE; ! Set motionCancel to be initally FALSE
+        StopMoveReset;
+        StartMove;
         !MotionSup \On; 
         
         ! Connect the cancelTrap routine which runs when motionCancel bool changes value
@@ -25,11 +28,14 @@ MODULE MTRN4230_Move_Sample
         CONNECT execErr WITH execErrTrap;
         ISignalDO DO_EXEC_ERR, 1, execErr;
         
+        initialised := TRUE;   
     ENDPROC
     
     PROC Main()
-               
-        Initialise;
+        
+        IF initialised = FALSE THEN
+            Initialise;
+        ENDIF
         
         ReceiveCommandLoop; ! Main Loop
 
@@ -81,7 +87,7 @@ MODULE MTRN4230_Move_Sample
                 
                 ! Calculate required joint angles to reach the offset coordinate position and check if it's reachable
                 jtarg := CalcJointT(Offs(pTableHome, coord.x, coord.y, coord.z),tSCup \ErrorNumber:=myerr);
-                
+
                 ! If not feasible send error message to both MATLAB and FlexPendant
                 IF myerr = ERR_ROBLIMIT THEN 
                     errmsg := "Robot Movement Limit";
@@ -89,7 +95,7 @@ MODULE MTRN4230_Move_Sample
                     TPWrite outputMsg;
                 ! Else perform the movement command and indicate that the movement is okay
                 ELSE
-                    outputMsg := ("Moving to: " + ValToStr(coord) + "\0A");
+                    outputMsg := ("Moving to: " + ValToStr(coord) + "rel. to pTableHome" + "\0A");
                     TPWrite outputMsg;
                     errmsg := "Movement Okay";
                     
@@ -98,6 +104,32 @@ MODULE MTRN4230_Move_Sample
                     inMotion := FALSE;
                 ENDIF
                 
+            CASE "MVLINEAR": ! Move to relative to table linearly
+                ! Convert received string arguments to values
+                ok := StrToVal(ROBargs{2}, coord.x);
+                ok := StrToVal(ROBargs{3}, coord.y);
+                ok := StrToVal(ROBargs{4}, coord.z);
+                
+                jtarg := CalcJointT(Offs(pTableHome, coord.x, coord.y, coord.z),tSCup \ErrorNumber:=myerr);
+                jtarg.robax.rax_6 := jcurr.robax.rax_6;
+                rtarg := CalcRobT(jtarg,tSCup);
+                
+                ! If not feasible send error message to both MATLAB and FlexPendant
+                IF myerr = ERR_ROBLIMIT THEN 
+                    errmsg := "Robot Movement Limit";
+                    outputMsg := ("Robot Movement Limit" + "\0A");
+                    TPWrite outputMsg;
+                ! Else perform the movement command and indicate that the movement is okay
+                ELSE
+                    outputMsg := ("Moving linearly to: " + ValToStr(coord) + "rel. to pTableHome" + "\0A");
+                    TPWrite outputMsg;
+                    errmsg := "Movement Okay";
+                    
+                    inMotion := TRUE;
+                    SingArea \Off;
+                    MoveL rtarg,sspeed,fine,tSCup;
+                    inMotion := FALSE;
+                ENDIF
 
             CASE "MVPOSCON": ! Move position relative to conveyor
                 ok := StrToVal(ROBargs{2}, coord.x);
@@ -111,7 +143,7 @@ MODULE MTRN4230_Move_Sample
                     errmsg := "Robot Movement Limit";
                 ELSE
                     errmsg := "Movement Okay";
-                    outputMsg := ("Moving to: " + ValToStr(coord) + "\0A");
+                    outputMsg := ("Moving to: " + ValToStr(coord) + "rel. to pConvHome" + "\0A");
                     TPWrite outputMsg;   
                     
                     inMotion := TRUE;
@@ -162,7 +194,6 @@ MODULE MTRN4230_Move_Sample
                 ! Switch to determine which joint will be jogged
                 TEST joint
                 
-                ! Add jogdir to the desired joint
                 CASE 1:
                 jtarg.robax.rax_1 := jcurr.robax.rax_1 + jogdir;
                 
@@ -228,7 +259,7 @@ MODULE MTRN4230_Move_Sample
                 quat := NOrient(quat); ! Normalise the quaternion in case it doesn't quite add up to 1
                 
                 rcurr := CRobT(); ! Get current robot properties
-                rcurr := rtarg; ! Set target robot properties to current robot properties 
+                rtarg := rcurr; ! Set target robot properties to current robot properties 
                 rtarg.rot := quat; ! Set target quaternion 
                 
                 sspeed.v_ori := sspeed.v_tcp; ! Set orientation speed to be the same as end effector speed
@@ -286,7 +317,6 @@ MODULE MTRN4230_Move_Sample
                 ! Switch to determine which direction the linear movement is in
                 TEST ROBargs{2}
                 
-                ! Increment desired the end effector coordinate by jogdir
                 CASE "X":
                     rtarg.trans.x := rcurr.trans.x + jogdir;
                 
@@ -327,7 +357,6 @@ MODULE MTRN4230_Move_Sample
                 ! Switch to determine which direction the linear movement is in
                 TEST ROBargs{2}
                 
-                ! Increment the current end effector position by jogdir in the desired direction relative to its own frame
                 CASE "X":
                         rtarg := RelTool(rcurr,jogdir,0,0);
                 
@@ -376,7 +405,8 @@ MODULE MTRN4230_Move_Sample
             StorePath;
             ClearPath;
             motionCancel := FALSE;
-            ReceiveCommandLoop;
+            !ReceiveCommandLoop;
+            ExitCycle;
         ENDIF
         
     ENDTRAP
