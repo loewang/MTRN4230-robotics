@@ -749,6 +749,1410 @@ function Ass3GUI2RAPID()
                 pause(0.1);
             end
             
+            
+         
+            % ---------------------------------------- Fill button pressed
+            if(mvapp.FILLButtonPressed)
+                fwrite(socket, 'SETSOLEN 0');
+                
+                % check if Player 1
+                if(strcmp(mvapp.DropDown_2.Value, 'Player 1'))
+                
+                    % Move to conveyer to pick up block
+                    cmd = 'SETPOSES 90,0,20,0,0,0';
+                    fwrite(socket, cmd);
+                    disp(cmd);
+                    pause(5);
+                    
+                    cmd = 'MVPOSCON 0,0,100';
+                    fwrite(socket, cmd);
+                    disp(cmd);
+                    pause(1);
+                    
+                    % Pick up block
+                    cmd = 'VACUUMON';
+                    fwrite(socket, cmd);
+                    disp(cmd);
+                    pause(0.5);
+                    
+                    cmd = 'SETSOLEN 1';
+                    fwrite(socket, cmd);
+                    disp(cmd);
+                    pause(0.1);
+                    
+                    % Move block to table
+                    cmd = 'MVPOSCON 0,0,200';
+                    fwrite(socket, cmd);
+                    disp(cmd);
+                    pause(3);
+                    
+                    % Depending where next block is, move to that pos
+                    % Block pos in an array for WESTERN SIDE (Player 1)
+                    cmd = sprintf('MVPOSTAB %f,%f,14', blockPosWesternSide);
+                    fwrite(socket, cmd);
+                    disp(cmd);
+                    pause(1);
+                    
+                    % Release block in its position
+                    cmd = 'SETSOLEN 0';
+                    fwrite(socket, cmd);
+                    pause(0.1);
+                    disp(cmd);
+                    
+                    cmd = 'VACUUMOF';
+                    fwrite(socket, cmd);
+                    disp(cmd);
+                    pause(0.1);
+                    
+                    % Repeat this 5 more times since 6 blocks
+                    
+                % Player 2
+                else
+                    
+                    % Move to conveyer to pick up block
+                    cmd = 'SETPOSES 90,0,20,0,0,0';
+                    fwrite(socket, cmd);
+                    disp(cmd);
+                    pause(5);
+                    
+                    cmd = 'MVPOSCON 0,0,100';
+                    fwrite(socket, cmd);
+                    disp(cmd);
+                    pause(1);
+                    
+                    % Pick up block
+                    cmd = 'VACUUMON';
+                    fwrite(socket, cmd);
+                    disp(cmd);
+                    pause(0.5);
+                    
+                    cmd = 'SETSOLEN 1';
+                    fwrite(socket, cmd);
+                    disp(cmd);
+                    pause(0.1);
+                    
+                    % Move block to table
+                    cmd = 'MVPOSCON 0,0,200';
+                    fwrite(socket, cmd);
+                    disp(cmd);
+                    pause(3);
+                    
+                    % Depending where next block is, move to that pos
+                    % Block pos in an array for EASTERN SIDE (Player 2)
+                    cmd = sprintf('MVPOSTAB %f,%f,14', blockPosEasternSide);
+                    fwrite(socket, cmd);
+                    disp(cmd);
+                    
+                    % Release block in its position
+                    cmd = 'SETSOLEN 0';
+                    fwrite(socket, cmd);
+                    pause(0.1);
+                    disp(cmd);
+                    
+                    cmd = 'VACUUMOF';
+                    fwrite(socket, cmd);
+                    disp(cmd);
+                    pause(0.1);
+                    
+                    % Repeat this 5 more times since 6 blocks
+                    
+                end
+            end
+            
+            
+            %--------------------------------------- Discard button pressed
+            if(mvapp.DISCARDButtonPressed)
+                fwrite(socket, 'SETSOLEN 0');
+                
+                % check if Player 1
+                if(strcmp(mvapp.DropDown_2.Value, 'Player 1'))
+                
+                    % Move to first block pos (Western Side for Player 1)
+                    cmd = sprintf('MVPOSTAB %f,%f,13', blockPosWesternSide);
+                    disp(cmd);
+                    fwrite(socket, cmd);
+                    pause(5);
+                    
+                    % Pick up the block
+                    cmd = 'VACUUMON';
+                    fwrite(socket, cmd);
+                    disp(cmd);
+                    pause(0.1);
+                    
+                    cmd = 'SETSOLEN 1';
+                    fwrtie(socket, cmd);
+                    disp(cmd);
+                    pause(0.1);
+                    
+                    % Move block to conveyor
+                    cmd = sprintf('MVPOSTAB %f,%f,100', blockPosWesternSide);
+                    fwrite(socket, cmd);
+                    disp(cmd);
+                    pause(1);
+                    
+                    cmd = 'SETPOSES 90,0,20,0,0,0';
+                    fwrite(socket, cmd);
+                    disp(cmd);
+                    pause(3);
+                    
+                    cmd = 'MVPOSCON 0,0,100';
+                    fwrite(socket, cmd);
+                    disp(cmd);
+                    pause(3);
+                    
+                    % Release block
+                    cmd = 'SETSOLEN 0';
+                    fwrite(socket, cmd);
+                    pause(0.1);
+                    disp(cmd);
+                    
+                    cmd = 'VACUUMOF';
+                    fwrite(socket, cmd);
+                    disp(cmd);
+                    pause(0.1);
+                    
+                    % Now move back to second Western Pos in array
+                    
+                    % Repeat until all blocks placed back.
+
+                % Player 2
+                else
+                    
+                    % Move to first block pos (Eastern Side for Player 2)
+                    cmd = sprintf('MVPOSTAB %f,%f,13', blockPosEasternSide);
+                    disp(cmd);
+                    fwrite(socket, cmd);
+                    pause(5);
+                    
+                    % Pick up the block
+                    cmd = 'VACUUMON';
+                    fwrite(socket, cmd);
+                    disp(cmd);
+                    pause(0.1);
+                    
+                    cmd = 'SETSOLEN 1';
+                    fwrtie(socket, cmd);
+                    disp(cmd);
+                    pause(0.1);
+                    
+                    % Move block to conveyor
+                    cmd = sprintf('MVPOSTAB %f,%f,100', blockPosEasternSide);
+                    fwrite(socket, cmd);
+                    disp(cmd);
+                    pause(1);
+                    
+                    cmd = 'SETPOSES 90,0,20,0,0,0';
+                    fwrite(socket, cmd);
+                    disp(cmd);
+                    pause(3);
+                    
+                    cmd = 'MVPOSCON 0,0,100';
+                    fwrite(socket, cmd);
+                    disp(cmd);
+                    pause(3);
+                    
+                    % Release block
+                    cmd = 'SETSOLEN 0';
+                    fwrite(socket, cmd);
+                    pause(0.1);
+                    disp(cmd);
+                    
+                    cmd = 'VACUUMOF';
+                    fwrite(socket, cmd);
+                    disp(cmd);
+                    pause(0.1);
+                    
+                    % Now move back to second Eastern Pos in array
+                    
+                    % Repeat until all blocks placed back.
+               
+                end
+            end
+
+            
+            %------------------------------------------ Sort button pressed
+            if(mvapp.SORTButtonPressed)
+                fwrite(socket, 'SETSOLEN 0');
+                
+                % check if Player 1
+                if(strcmp(mvapp.DropDown_2.Value, 'Player 1'))
+                
+                % Player 2
+                else
+                    
+                end
+            end
+            
+            
+            
+            %------------------------------------------ Clear table pressed
+            if(mvapp.CLEARButtonPressed)
+                fwrite(socket, 'SETSOLEN 0');
+                
+                % Block positions placed in an array 'BlockPoses'
+                % Move to the first block pos
+                cmd = sprintf('MVPOSTAB %f,%f,13', BlockPoses);
+                disp(cmd);
+                fwrite(socket,cmd);
+                pause(5);
+                
+                % Pick up block
+                cmd = 'VACUUMON';
+                fwrite(socket, cmd);
+                disp(cmd);
+                pause(0.1);
+                
+                cmd = 'SETSOLEN 1';
+                fwrite(socket, cmd);
+                disp(cmd);
+                pause(0.1);
+                
+                % Move to conveyor
+                cmd = sprintf('MVPOSTAB %f,%f,100', BlockPoses);
+                fwrite(socket, cmd);
+                disp(cmd);
+                pause(3);
+                
+                cmd = 'SETPOSES 90,0,20,0,0,0';
+                fwrite(socket, cmd);
+                disp(cmd);
+                pause(3);
+
+                cmd = 'MVPOSCON 0,0,100';
+                fwrite(socket, cmd);
+                disp(cmd);
+                pause(3);
+
+                % Release block
+                cmd = 'SETSOLEN 0';
+                fwrite(socket, cmd);
+                pause(0.1);
+                disp(cmd);
+
+                cmd = 'VACUUMOF';
+                fwrite(socket, cmd);
+                disp(cmd);
+                pause(0.1);
+
+                % Now move back to second element or block in the 
+                % BlockPoses array, and repeat until all finished
+            end
+            
+            
+            %------------------------------------------- Fill table pressed
+            if(mvapp.TableFILLButtonPressed)
+                fwrite(socket, 'SETSOLEN 0');
+                
+                
+            end
+
+            
+            %--------------------------------------- PVP TIC TAC TOE Code
+            
+            if(tttapp.PvPButtonPressed)
+                
+                % Open TTT GUI
+                tttapp = TTTGUI();
+                
+                % Once cell is pressed, calc the position on board (CP)
+                % The robot will pick up either a Letter or Shape block
+                % depending on the player turn, and release it on the Cell
+                % Point (CP).
+                
+                % Cell 1 Pressed - D4
+                if(tttapp.CellOneVal == 1)
+                    
+                    % Now we need to see which player turn it is.
+                    % Player 1 is 'O' (Shapes) and 2 is 'X'(Letters)
+                    if (tttapp.Cell1Button.Text == app.Player1)
+                        
+                        % Player 1 deck is located WESTERN side of table
+                        % Move to first block pos (Western Side for Player 1)
+                        cmd = sprintf('MVPOSTAB %f,%f,13', blockPosWesternSide);
+                        disp(cmd);
+                        fwrite(socket, cmd);
+                        pause(5);
+
+                        % Pick up the block
+                        cmd = 'VACUUMON';
+                        fwrite(socket, cmd);
+                        disp(cmd);
+                        pause(0.1);
+
+                        cmd = 'SETSOLEN 1';
+                        fwrtie(socket, cmd);
+                        disp(cmd);
+                        pause(0.1);
+                        
+                        % Move up
+                        cmd = sprintf('MVPOSTAB %f,%f,100', blockPosWesternSide);
+                        disp(cmd);
+                        fwrite(socket, cmd);
+                        pause(5);
+                        
+                        % Now move the block into Cell 1 Position
+                        ri = double(68)-64;
+                        ci = 4;
+                        BPi = sub2ind([9 9],ri,ci);
+                        tabXY = BP.XY(BPi,:);
+                       
+                        % Move to BP position
+                        cmd = sprintf('MVPOSTAB %f,%f,13',tabXY);
+                        fprintf("Moving to %s\n",targetBP);
+                        disp(cmd);
+                        fwrite(socket,cmd);
+                        pause(5);
+                        
+                        % Release block in its position
+                        cmd = 'SETSOLEN 0';
+                        fwrite(socket, cmd);
+                        pause(0.1);
+                        disp(cmd);
+                    
+                        cmd = 'VACUUMOF';
+                        fwrite(socket, cmd);
+                        disp(cmd);
+                        pause(0.1);
+                        
+                        % Move up
+                        cmd = sprintf('MVPOSTAB %f,%f,100',tabXY);
+                        fprintf("Moving to %s\n",targetBP);
+                        disp(cmd);
+                        fwrite(socket,cmd);
+                        pause(5);
+
+                    else
+                        
+                        % Player 2 deck is located EASTERN side of table
+                        cmd = sprintf('MVPOSTAB %f,%f,13', blockPosEasternSide);
+                        disp(cmd);
+                        fwrite(socket, cmd);
+                        pause(5);
+
+                        % Pick up the block
+                        cmd = 'VACUUMON';
+                        fwrite(socket, cmd);
+                        disp(cmd);
+                        pause(0.1);
+
+                        cmd = 'SETSOLEN 1';
+                        fwrtie(socket, cmd);
+                        disp(cmd);
+                        pause(0.1);
+                        
+                        % Move up
+                        cmd = sprintf('MVPOSTAB %f,%f,100', blockPosEasternSide);
+                        disp(cmd);
+                        fwrite(socket, cmd);
+                        pause(5);
+                        
+                        % Now move the block into Cell 1 Position
+                        ri = double(68)-64;
+                        ci = 4;
+                        BPi = sub2ind([9 9],ri,ci);
+                        tabXY = BP.XY(BPi,:);
+                       
+                        % Move to BP position
+                        cmd = sprintf('MVPOSTAB %f,%f,13',tabXY);
+                        fprintf("Moving to %s\n",targetBP);
+                        disp(cmd);
+                        fwrite(socket,cmd);
+                        pause(5);
+                        
+                        % Release block in its position
+                        cmd = 'SETSOLEN 0';
+                        fwrite(socket, cmd);
+                        pause(0.1);
+                        disp(cmd);
+                    
+                        cmd = 'VACUUMOF';
+                        fwrite(socket, cmd);
+                        disp(cmd);
+                        pause(0.1);
+                        
+                        % Move up
+                        cmd = sprintf('MVPOSTAB %f,%f,100',tabXY);
+                        fprintf("Moving to %s\n",targetBP);
+                        disp(cmd);
+                        fwrite(socket,cmd);
+                        pause(5);
+                        
+                    end 
+                end
+                
+                % Cell 2 Pressed - D5
+                if(tttapp.CellTwoVal == 1)
+                    
+                    % Now we need to see which player turn it is.
+                    % Player 1 is 'O' (Shapes) and 2 is 'X'(Letters)
+                    if (tttapp.Cell2Button.Text == app.Player1)
+                        
+                        % Player 1 deck is located WESTERN side of table
+                        % Move to first block pos (Western Side for Player 1)
+                        cmd = sprintf('MVPOSTAB %f,%f,13', blockPosWesternSide);
+                        disp(cmd);
+                        fwrite(socket, cmd);
+                        pause(5);
+
+                        % Pick up the block
+                        cmd = 'VACUUMON';
+                        fwrite(socket, cmd);
+                        disp(cmd);
+                        pause(0.1);
+
+                        cmd = 'SETSOLEN 1';
+                        fwrtie(socket, cmd);
+                        disp(cmd);
+                        pause(0.1);
+                        
+                        % Move up
+                        cmd = sprintf('MVPOSTAB %f,%f,100', blockPosWesternSide);
+                        disp(cmd);
+                        fwrite(socket, cmd);
+                        pause(5);
+                        
+                        % Now move the block into Cell 2 Position
+                        ri = double(68)-64;
+                        ci = 5;
+                        BPi = sub2ind([9 9],ri,ci);
+                        tabXY = BP.XY(BPi,:);
+                       
+                        % Move to BP position
+                        cmd = sprintf('MVPOSTAB %f,%f,13',tabXY);
+                        fprintf("Moving to %s\n",targetBP);
+                        disp(cmd);
+                        fwrite(socket,cmd);
+                        pause(5);
+                        
+                        % Release block in its position
+                        cmd = 'SETSOLEN 0';
+                        fwrite(socket, cmd);
+                        pause(0.1);
+                        disp(cmd);
+                    
+                        cmd = 'VACUUMOF';
+                        fwrite(socket, cmd);
+                        disp(cmd);
+                        pause(0.1);
+                        
+                        % Move up
+                        cmd = sprintf('MVPOSTAB %f,%f,100',tabXY);
+                        fprintf("Moving to %s\n",targetBP);
+                        disp(cmd);
+                        fwrite(socket,cmd);
+                        pause(5);
+
+                    else
+                        
+                        % Player 2 deck is located EASTERN side of table
+                        cmd = sprintf('MVPOSTAB %f,%f,13', blockPosEasternSide);
+                        disp(cmd);
+                        fwrite(socket, cmd);
+                        pause(5);
+
+                        % Pick up the block
+                        cmd = 'VACUUMON';
+                        fwrite(socket, cmd);
+                        disp(cmd);
+                        pause(0.1);
+
+                        cmd = 'SETSOLEN 1';
+                        fwrtie(socket, cmd);
+                        disp(cmd);
+                        pause(0.1);
+                        
+                        % Move up
+                        cmd = sprintf('MVPOSTAB %f,%f,100', blockPosEasternSide);
+                        disp(cmd);
+                        fwrite(socket, cmd);
+                        pause(5);
+                        
+                        % Now move the block into Cell 2 Position
+                        ri = double(68)-64;
+                        ci = 5;
+                        BPi = sub2ind([9 9],ri,ci);
+                        tabXY = BP.XY(BPi,:);
+                       
+                        % Move to BP position
+                        cmd = sprintf('MVPOSTAB %f,%f,13',tabXY);
+                        fprintf("Moving to %s\n",targetBP);
+                        disp(cmd);
+                        fwrite(socket,cmd);
+                        pause(5);
+                        
+                        % Release block in its position
+                        cmd = 'SETSOLEN 0';
+                        fwrite(socket, cmd);
+                        pause(0.1);
+                        disp(cmd);
+                    
+                        cmd = 'VACUUMOF';
+                        fwrite(socket, cmd);
+                        disp(cmd);
+                        pause(0.1);
+                        
+                        % Move up
+                        cmd = sprintf('MVPOSTAB %f,%f,100',tabXY);
+                        fprintf("Moving to %s\n",targetBP);
+                        disp(cmd);
+                        fwrite(socket,cmd);
+                        pause(5);
+                        
+                    end
+                end
+                
+                % Cell 3 Pressed - D6
+                if(tttapp.CellThreeVal == 1)
+                    
+                    % Now we need to see which player turn it is.
+                    % Player 1 is 'O' (Shapes) and 2 is 'X'(Letters)
+                    if (tttapp.Cell3Button.Text == app.Player1)
+                        
+                        % Player 1 deck is located WESTERN side of table
+                        % Move to first block pos (Western Side for Player 1)
+                        cmd = sprintf('MVPOSTAB %f,%f,13', blockPosWesternSide);
+                        disp(cmd);
+                        fwrite(socket, cmd);
+                        pause(5);
+
+                        % Pick up the block
+                        cmd = 'VACUUMON';
+                        fwrite(socket, cmd);
+                        disp(cmd);
+                        pause(0.1);
+
+                        cmd = 'SETSOLEN 1';
+                        fwrtie(socket, cmd);
+                        disp(cmd);
+                        pause(0.1);
+                        
+                        % Move up
+                        cmd = sprintf('MVPOSTAB %f,%f,100', blockPosWesternSide);
+                        disp(cmd);
+                        fwrite(socket, cmd);
+                        pause(5);
+                        
+                        % Now move the block into Cell 3 Position
+                        ri = double(68)-64;
+                        ci = 6;
+                        BPi = sub2ind([9 9],ri,ci);
+                        tabXY = BP.XY(BPi,:);
+                       
+                        % Move to BP position
+                        cmd = sprintf('MVPOSTAB %f,%f,13',tabXY);
+                        fprintf("Moving to %s\n",targetBP);
+                        disp(cmd);
+                        fwrite(socket,cmd);
+                        pause(5);
+                        
+                        % Release block in its position
+                        cmd = 'SETSOLEN 0';
+                        fwrite(socket, cmd);
+                        pause(0.1);
+                        disp(cmd);
+                    
+                        cmd = 'VACUUMOF';
+                        fwrite(socket, cmd);
+                        disp(cmd);
+                        pause(0.1);
+                        
+                        % Move up
+                        cmd = sprintf('MVPOSTAB %f,%f,100',tabXY);
+                        fprintf("Moving to %s\n",targetBP);
+                        disp(cmd);
+                        fwrite(socket,cmd);
+                        pause(5);
+
+                    else
+                        
+                        % Player 2 deck is located EASTERN side of table
+                        cmd = sprintf('MVPOSTAB %f,%f,13', blockPosEasternSide);
+                        disp(cmd);
+                        fwrite(socket, cmd);
+                        pause(5);
+
+                        % Pick up the block
+                        cmd = 'VACUUMON';
+                        fwrite(socket, cmd);
+                        disp(cmd);
+                        pause(0.1);
+
+                        cmd = 'SETSOLEN 1';
+                        fwrtie(socket, cmd);
+                        disp(cmd);
+                        pause(0.1);
+                        
+                        % Move up
+                        cmd = sprintf('MVPOSTAB %f,%f,100', blockPosEasternSide);
+                        disp(cmd);
+                        fwrite(socket, cmd);
+                        pause(5);
+                        
+                        % Now move the block into Cell 3 Position
+                        ri = double(68)-64;
+                        ci = 6;
+                        BPi = sub2ind([9 9],ri,ci);
+                        tabXY = BP.XY(BPi,:);
+                       
+                        % Move to BP position
+                        cmd = sprintf('MVPOSTAB %f,%f,13',tabXY);
+                        fprintf("Moving to %s\n",targetBP);
+                        disp(cmd);
+                        fwrite(socket,cmd);
+                        pause(5);
+                        
+                        % Release block in its position
+                        cmd = 'SETSOLEN 0';
+                        fwrite(socket, cmd);
+                        pause(0.1);
+                        disp(cmd);
+                    
+                        cmd = 'VACUUMOF';
+                        fwrite(socket, cmd);
+                        disp(cmd);
+                        pause(0.1);
+                        
+                        % Move up
+                        cmd = sprintf('MVPOSTAB %f,%f,100',tabXY);
+                        fprintf("Moving to %s\n",targetBP);
+                        disp(cmd);
+                        fwrite(socket,cmd);
+                        pause(5);
+                        
+                    end
+                end
+                
+                % Cell 4 Pressed - E4
+                if(tttapp.CellFourVal == 1)
+                    
+                    % Now we need to see which player turn it is.
+                    % Player 1 is 'O' (Shapes) and 2 is 'X'(Letters)
+                    if (tttapp.Cell4Button.Text == app.Player1)
+                        
+                        % Player 1 deck is located WESTERN side of table
+                        % Move to first block pos (Western Side for Player 1)
+                        cmd = sprintf('MVPOSTAB %f,%f,13', blockPosWesternSide);
+                        disp(cmd);
+                        fwrite(socket, cmd);
+                        pause(5);
+
+                        % Pick up the block
+                        cmd = 'VACUUMON';
+                        fwrite(socket, cmd);
+                        disp(cmd);
+                        pause(0.1);
+
+                        cmd = 'SETSOLEN 1';
+                        fwrtie(socket, cmd);
+                        disp(cmd);
+                        pause(0.1);
+                        
+                        % Move up
+                        cmd = sprintf('MVPOSTAB %f,%f,100', blockPosWesternSide);
+                        disp(cmd);
+                        fwrite(socket, cmd);
+                        pause(5);
+                        
+                        % Now move the block into Cell 4 Position
+                        ri = double(69)-64;
+                        ci = 4;
+                        BPi = sub2ind([9 9],ri,ci);
+                        tabXY = BP.XY(BPi,:);
+                       
+                        % Move to BP position
+                        cmd = sprintf('MVPOSTAB %f,%f,13',tabXY);
+                        fprintf("Moving to %s\n",targetBP);
+                        disp(cmd);
+                        fwrite(socket,cmd);
+                        pause(5);
+                        
+                        % Release block in its position
+                        cmd = 'SETSOLEN 0';
+                        fwrite(socket, cmd);
+                        pause(0.1);
+                        disp(cmd);
+                    
+                        cmd = 'VACUUMOF';
+                        fwrite(socket, cmd);
+                        disp(cmd);
+                        pause(0.1);
+                        
+                        % Move up
+                        cmd = sprintf('MVPOSTAB %f,%f,100',tabXY);
+                        fprintf("Moving to %s\n",targetBP);
+                        disp(cmd);
+                        fwrite(socket,cmd);
+                        pause(5);
+
+                    else
+                        
+                        % Player 2 deck is located EASTERN side of table
+                        cmd = sprintf('MVPOSTAB %f,%f,13', blockPosEasternSide);
+                        disp(cmd);
+                        fwrite(socket, cmd);
+                        pause(5);
+
+                        % Pick up the block
+                        cmd = 'VACUUMON';
+                        fwrite(socket, cmd);
+                        disp(cmd);
+                        pause(0.1);
+
+                        cmd = 'SETSOLEN 1';
+                        fwrtie(socket, cmd);
+                        disp(cmd);
+                        pause(0.1);
+                        
+                        % Move up
+                        cmd = sprintf('MVPOSTAB %f,%f,100', blockPosEasternSide);
+                        disp(cmd);
+                        fwrite(socket, cmd);
+                        pause(5);
+                        
+                        % Now move the block into Cell 4 Position
+                        ri = double(69)-64;
+                        ci = 4;
+                        BPi = sub2ind([9 9],ri,ci);
+                        tabXY = BP.XY(BPi,:);
+                       
+                        % Move to BP position
+                        cmd = sprintf('MVPOSTAB %f,%f,13',tabXY);
+                        fprintf("Moving to %s\n",targetBP);
+                        disp(cmd);
+                        fwrite(socket,cmd);
+                        pause(5);
+                        
+                        % Release block in its position
+                        cmd = 'SETSOLEN 0';
+                        fwrite(socket, cmd);
+                        pause(0.1);
+                        disp(cmd);
+                    
+                        cmd = 'VACUUMOF';
+                        fwrite(socket, cmd);
+                        disp(cmd);
+                        pause(0.1);
+                        
+                        % Move up
+                        cmd = sprintf('MVPOSTAB %f,%f,100',tabXY);
+                        fprintf("Moving to %s\n",targetBP);
+                        disp(cmd);
+                        fwrite(socket,cmd);
+                        pause(5);
+                        
+                    end
+                end
+                
+                % Cell 5 Pressed - E5
+                if(tttapp.CellFiveVal == 1)
+                    
+                    % Now we need to see which player turn it is.
+                    % Player 1 is 'O' (Shapes) and 2 is 'X'(Letters)
+                    if (tttapp.Cell1Button.Text == app.Player1)
+                        
+                        % Player 1 deck is located WESTERN side of table
+                        % Move to first block pos (Western Side for Player 1)
+                        cmd = sprintf('MVPOSTAB %f,%f,13', blockPosWesternSide);
+                        disp(cmd);
+                        fwrite(socket, cmd);
+                        pause(5);
+
+                        % Pick up the block
+                        cmd = 'VACUUMON';
+                        fwrite(socket, cmd);
+                        disp(cmd);
+                        pause(0.1);
+
+                        cmd = 'SETSOLEN 1';
+                        fwrtie(socket, cmd);
+                        disp(cmd);
+                        pause(0.1);
+                        
+                        % Move up
+                        cmd = sprintf('MVPOSTAB %f,%f,100', blockPosWesternSide);
+                        disp(cmd);
+                        fwrite(socket, cmd);
+                        pause(5);
+                        
+                        % Now move the block into Cell 5 Position
+                        ri = double(69)-64;
+                        ci = 5;
+                        BPi = sub2ind([9 9],ri,ci);
+                        tabXY = BP.XY(BPi,:);
+                       
+                        % Move to BP position
+                        cmd = sprintf('MVPOSTAB %f,%f,13',tabXY);
+                        fprintf("Moving to %s\n",targetBP);
+                        disp(cmd);
+                        fwrite(socket,cmd);
+                        pause(5);
+                        
+                        % Release block in its position
+                        cmd = 'SETSOLEN 0';
+                        fwrite(socket, cmd);
+                        pause(0.1);
+                        disp(cmd);
+                    
+                        cmd = 'VACUUMOF';
+                        fwrite(socket, cmd);
+                        disp(cmd);
+                        pause(0.1);
+                        
+                        % Move up
+                        cmd = sprintf('MVPOSTAB %f,%f,100',tabXY);
+                        fprintf("Moving to %s\n",targetBP);
+                        disp(cmd);
+                        fwrite(socket,cmd);
+                        pause(5);
+
+                    else
+                        
+                        % Player 2 deck is located EASTERN side of table
+                        cmd = sprintf('MVPOSTAB %f,%f,13', blockPosEasternSide);
+                        disp(cmd);
+                        fwrite(socket, cmd);
+                        pause(5);
+
+                        % Pick up the block
+                        cmd = 'VACUUMON';
+                        fwrite(socket, cmd);
+                        disp(cmd);
+                        pause(0.1);
+
+                        cmd = 'SETSOLEN 1';
+                        fwrtie(socket, cmd);
+                        disp(cmd);
+                        pause(0.1);
+                        
+                        % Move up
+                        cmd = sprintf('MVPOSTAB %f,%f,100', blockPosEasternSide);
+                        disp(cmd);
+                        fwrite(socket, cmd);
+                        pause(5);
+                        
+                        % Now move the block into Cell 5 Position
+                        ri = double(69)-64;
+                        ci = 5;
+                        BPi = sub2ind([9 9],ri,ci);
+                        tabXY = BP.XY(BPi,:);
+                       
+                        % Move to BP position
+                        cmd = sprintf('MVPOSTAB %f,%f,13',tabXY);
+                        fprintf("Moving to %s\n",targetBP);
+                        disp(cmd);
+                        fwrite(socket,cmd);
+                        pause(5);
+                        
+                        % Release block in its position
+                        cmd = 'SETSOLEN 0';
+                        fwrite(socket, cmd);
+                        pause(0.1);
+                        disp(cmd);
+                    
+                        cmd = 'VACUUMOF';
+                        fwrite(socket, cmd);
+                        disp(cmd);
+                        pause(0.1);
+                        
+                        % Move up
+                        cmd = sprintf('MVPOSTAB %f,%f,100',tabXY);
+                        fprintf("Moving to %s\n",targetBP);
+                        disp(cmd);
+                        fwrite(socket,cmd);
+                        pause(5);
+                        
+                    end
+                end
+                
+                % Cell 6 Pressed - E6
+                if(tttapp.CellSixVal == 1)
+                    
+                    % Now we need to see which player turn it is.
+                    % Player 1 is 'O' (Shapes) and 2 is 'X'(Letters)
+                    if (tttapp.Cell6Button.Text == app.Player1)
+                        
+                        % Player 1 deck is located WESTERN side of table
+                        % Move to first block pos (Western Side for Player 1)
+                        cmd = sprintf('MVPOSTAB %f,%f,13', blockPosWesternSide);
+                        disp(cmd);
+                        fwrite(socket, cmd);
+                        pause(5);
+
+                        % Pick up the block
+                        cmd = 'VACUUMON';
+                        fwrite(socket, cmd);
+                        disp(cmd);
+                        pause(0.1);
+
+                        cmd = 'SETSOLEN 1';
+                        fwrtie(socket, cmd);
+                        disp(cmd);
+                        pause(0.1);
+                        
+                        % Move up
+                        cmd = sprintf('MVPOSTAB %f,%f,100', blockPosWesternSide);
+                        disp(cmd);
+                        fwrite(socket, cmd);
+                        pause(5);
+                        
+                        % Now move the block into Cell 1 Position
+                        ri = double(69)-64;
+                        ci = 6;
+                        BPi = sub2ind([9 9],ri,ci);
+                        tabXY = BP.XY(BPi,:);
+                       
+                        % Move to BP position
+                        cmd = sprintf('MVPOSTAB %f,%f,13',tabXY);
+                        fprintf("Moving to %s\n",targetBP);
+                        disp(cmd);
+                        fwrite(socket,cmd);
+                        pause(5);
+                        
+                        % Release block in its position
+                        cmd = 'SETSOLEN 0';
+                        fwrite(socket, cmd);
+                        pause(0.1);
+                        disp(cmd);
+                    
+                        cmd = 'VACUUMOF';
+                        fwrite(socket, cmd);
+                        disp(cmd);
+                        pause(0.1);
+                        
+                        % Move up
+                        cmd = sprintf('MVPOSTAB %f,%f,100',tabXY);
+                        fprintf("Moving to %s\n",targetBP);
+                        disp(cmd);
+                        fwrite(socket,cmd);
+                        pause(5);
+
+                    else
+                        
+                        % Player 2 deck is located EASTERN side of table
+                        cmd = sprintf('MVPOSTAB %f,%f,13', blockPosEasternSide);
+                        disp(cmd);
+                        fwrite(socket, cmd);
+                        pause(5);
+
+                        % Pick up the block
+                        cmd = 'VACUUMON';
+                        fwrite(socket, cmd);
+                        disp(cmd);
+                        pause(0.1);
+
+                        cmd = 'SETSOLEN 1';
+                        fwrtie(socket, cmd);
+                        disp(cmd);
+                        pause(0.1);
+                        
+                        % Move up
+                        cmd = sprintf('MVPOSTAB %f,%f,100', blockPosEasternSide);
+                        disp(cmd);
+                        fwrite(socket, cmd);
+                        pause(5);
+                        
+                        % Now move the block into Cell 6 Position
+                        ri = double(69)-64;
+                        ci = 6;
+                        BPi = sub2ind([9 9],ri,ci);
+                        tabXY = BP.XY(BPi,:);
+                       
+                        % Move to BP position
+                        cmd = sprintf('MVPOSTAB %f,%f,13',tabXY);
+                        fprintf("Moving to %s\n",targetBP);
+                        disp(cmd);
+                        fwrite(socket,cmd);
+                        pause(5);
+                        
+                        % Release block in its position
+                        cmd = 'SETSOLEN 0';
+                        fwrite(socket, cmd);
+                        pause(0.1);
+                        disp(cmd);
+                    
+                        cmd = 'VACUUMOF';
+                        fwrite(socket, cmd);
+                        disp(cmd);
+                        pause(0.1);
+                        
+                        % Move up
+                        cmd = sprintf('MVPOSTAB %f,%f,100',tabXY);
+                        fprintf("Moving to %s\n",targetBP);
+                        disp(cmd);
+                        fwrite(socket,cmd);
+                        pause(5);
+                        
+                    end
+                end
+                
+                % Cell 7 Pressed - F4
+                if(tttapp.CellSevenVal == 1)
+                    
+                    % Now we need to see which player turn it is.
+                    % Player 1 is 'O' (Shapes) and 2 is 'X'(Letters)
+                    if (tttapp.Cell7Button.Text == app.Player1)
+                        
+                        % Player 1 deck is located WESTERN side of table
+                        % Move to first block pos (Western Side for Player 1)
+                        cmd = sprintf('MVPOSTAB %f,%f,13', blockPosWesternSide);
+                        disp(cmd);
+                        fwrite(socket, cmd);
+                        pause(5);
+
+                        % Pick up the block
+                        cmd = 'VACUUMON';
+                        fwrite(socket, cmd);
+                        disp(cmd);
+                        pause(0.1);
+
+                        cmd = 'SETSOLEN 1';
+                        fwrtie(socket, cmd);
+                        disp(cmd);
+                        pause(0.1);
+                        
+                        % Move up
+                        cmd = sprintf('MVPOSTAB %f,%f,100', blockPosWesternSide);
+                        disp(cmd);
+                        fwrite(socket, cmd);
+                        pause(5);
+                        
+                        % Now move the block into Cell 7 Position
+                        ri = double(70)-64;
+                        ci = 4;
+                        BPi = sub2ind([9 9],ri,ci);
+                        tabXY = BP.XY(BPi,:);
+                       
+                        % Move to BP position
+                        cmd = sprintf('MVPOSTAB %f,%f,13',tabXY);
+                        fprintf("Moving to %s\n",targetBP);
+                        disp(cmd);
+                        fwrite(socket,cmd);
+                        pause(5);
+                        
+                        % Release block in its position
+                        cmd = 'SETSOLEN 0';
+                        fwrite(socket, cmd);
+                        pause(0.1);
+                        disp(cmd);
+                    
+                        cmd = 'VACUUMOF';
+                        fwrite(socket, cmd);
+                        disp(cmd);
+                        pause(0.1);
+                        
+                        % Move up
+                        cmd = sprintf('MVPOSTAB %f,%f,100',tabXY);
+                        fprintf("Moving to %s\n",targetBP);
+                        disp(cmd);
+                        fwrite(socket,cmd);
+                        pause(5);
+
+                    else
+                        
+                        % Player 2 deck is located EASTERN side of table
+                        cmd = sprintf('MVPOSTAB %f,%f,13', blockPosEasternSide);
+                        disp(cmd);
+                        fwrite(socket, cmd);
+                        pause(5);
+
+                        % Pick up the block
+                        cmd = 'VACUUMON';
+                        fwrite(socket, cmd);
+                        disp(cmd);
+                        pause(0.1);
+
+                        cmd = 'SETSOLEN 1';
+                        fwrtie(socket, cmd);
+                        disp(cmd);
+                        pause(0.1);
+                        
+                        % Move up
+                        cmd = sprintf('MVPOSTAB %f,%f,100', blockPosEasternSide);
+                        disp(cmd);
+                        fwrite(socket, cmd);
+                        pause(5);
+                        
+                        % Now move the block into Cell 7 Position
+                        ri = double(70)-64;
+                        ci = 4;
+                        BPi = sub2ind([9 9],ri,ci);
+                        tabXY = BP.XY(BPi,:);
+                       
+                        % Move to BP position
+                        cmd = sprintf('MVPOSTAB %f,%f,13',tabXY);
+                        fprintf("Moving to %s\n",targetBP);
+                        disp(cmd);
+                        fwrite(socket,cmd);
+                        pause(5);
+                        
+                        % Release block in its position
+                        cmd = 'SETSOLEN 0';
+                        fwrite(socket, cmd);
+                        pause(0.1);
+                        disp(cmd);
+                    
+                        cmd = 'VACUUMOF';
+                        fwrite(socket, cmd);
+                        disp(cmd);
+                        pause(0.1);
+                        
+                        % Move up
+                        cmd = sprintf('MVPOSTAB %f,%f,100',tabXY);
+                        fprintf("Moving to %s\n",targetBP);
+                        disp(cmd);
+                        fwrite(socket,cmd);
+                        pause(5);
+                        
+                    end
+                end
+                
+                % Cell 8 Pressed - F5
+                if(tttapp.CellEightVal == 1)
+                    
+                    % Now we need to see which player turn it is.
+                    % Player 1 is 'O' (Shapes) and 2 is 'X'(Letters)
+                    if (tttapp.Cell8Button.Text == app.Player1)
+                        
+                        % Player 1 deck is located WESTERN side of table
+                        % Move to first block pos (Western Side for Player 1)
+                        cmd = sprintf('MVPOSTAB %f,%f,13', blockPosWesternSide);
+                        disp(cmd);
+                        fwrite(socket, cmd);
+                        pause(5);
+
+                        % Pick up the block
+                        cmd = 'VACUUMON';
+                        fwrite(socket, cmd);
+                        disp(cmd);
+                        pause(0.1);
+
+                        cmd = 'SETSOLEN 1';
+                        fwrtie(socket, cmd);
+                        disp(cmd);
+                        pause(0.1);
+                        
+                        % Move up
+                        cmd = sprintf('MVPOSTAB %f,%f,100', blockPosWesternSide);
+                        disp(cmd);
+                        fwrite(socket, cmd);
+                        pause(5);
+                        
+                        % Now move the block into Cell 8 Position
+                        ri = double(70)-64;
+                        ci = 5;
+                        BPi = sub2ind([9 9],ri,ci);
+                        tabXY = BP.XY(BPi,:);
+                       
+                        % Move to BP position
+                        cmd = sprintf('MVPOSTAB %f,%f,13',tabXY);
+                        fprintf("Moving to %s\n",targetBP);
+                        disp(cmd);
+                        fwrite(socket,cmd);
+                        pause(5);
+                        
+                        % Release block in its position
+                        cmd = 'SETSOLEN 0';
+                        fwrite(socket, cmd);
+                        pause(0.1);
+                        disp(cmd);
+                    
+                        cmd = 'VACUUMOF';
+                        fwrite(socket, cmd);
+                        disp(cmd);
+                        pause(0.1);
+                        
+                        % Move up
+                        cmd = sprintf('MVPOSTAB %f,%f,100',tabXY);
+                        fprintf("Moving to %s\n",targetBP);
+                        disp(cmd);
+                        fwrite(socket,cmd);
+                        pause(5);
+
+                    else
+                        
+                        % Player 2 deck is located EASTERN side of table
+                        cmd = sprintf('MVPOSTAB %f,%f,13', blockPosEasternSide);
+                        disp(cmd);
+                        fwrite(socket, cmd);
+                        pause(5);
+
+                        % Pick up the block
+                        cmd = 'VACUUMON';
+                        fwrite(socket, cmd);
+                        disp(cmd);
+                        pause(0.1);
+
+                        cmd = 'SETSOLEN 1';
+                        fwrtie(socket, cmd);
+                        disp(cmd);
+                        pause(0.1);
+                        
+                        % Move up
+                        cmd = sprintf('MVPOSTAB %f,%f,100', blockPosEasternSide);
+                        disp(cmd);
+                        fwrite(socket, cmd);
+                        pause(5);
+                        
+                        % Now move the block into Cell 8 Position
+                        ri = double(70)-64;
+                        ci = 5;
+                        BPi = sub2ind([9 9],ri,ci);
+                        tabXY = BP.XY(BPi,:);
+                       
+                        % Move to BP position
+                        cmd = sprintf('MVPOSTAB %f,%f,13',tabXY);
+                        fprintf("Moving to %s\n",targetBP);
+                        disp(cmd);
+                        fwrite(socket,cmd);
+                        pause(5);
+                        
+                        % Release block in its position
+                        cmd = 'SETSOLEN 0';
+                        fwrite(socket, cmd);
+                        pause(0.1);
+                        disp(cmd);
+                    
+                        cmd = 'VACUUMOF';
+                        fwrite(socket, cmd);
+                        disp(cmd);
+                        pause(0.1);
+                        
+                        % Move up
+                        cmd = sprintf('MVPOSTAB %f,%f,100',tabXY);
+                        fprintf("Moving to %s\n",targetBP);
+                        disp(cmd);
+                        fwrite(socket,cmd);
+                        pause(5);
+                        
+                    end
+                end
+                
+                % Cell 9 Pressed - F6
+                if(tttapp.CellNineVal == 1)
+                    
+                    % Now we need to see which player turn it is.
+                    % Player 1 is 'O' (Shapes) and 2 is 'X'(Letters)
+                    if (tttapp.Cell9Button.Text == app.Player1)
+                        
+                        % Player 1 deck is located WESTERN side of table
+                        % Move to first block pos (Western Side for Player 1)
+                        cmd = sprintf('MVPOSTAB %f,%f,13', blockPosWesternSide);
+                        disp(cmd);
+                        fwrite(socket, cmd);
+                        pause(5);
+
+                        % Pick up the block
+                        cmd = 'VACUUMON';
+                        fwrite(socket, cmd);
+                        disp(cmd);
+                        pause(0.1);
+
+                        cmd = 'SETSOLEN 1';
+                        fwrtie(socket, cmd);
+                        disp(cmd);
+                        pause(0.1);
+                        
+                        % Move up
+                        cmd = sprintf('MVPOSTAB %f,%f,100', blockPosWesternSide);
+                        disp(cmd);
+                        fwrite(socket, cmd);
+                        pause(5);
+                        
+                        % Now move the block into Cell 9 Position
+                        ri = double(70)-64;
+                        ci = 6;
+                        BPi = sub2ind([9 9],ri,ci);
+                        tabXY = BP.XY(BPi,:);
+                       
+                        % Move to BP position
+                        cmd = sprintf('MVPOSTAB %f,%f,13',tabXY);
+                        fprintf("Moving to %s\n",targetBP);
+                        disp(cmd);
+                        fwrite(socket,cmd);
+                        pause(5);
+                        
+                        % Release block in its position
+                        cmd = 'SETSOLEN 0';
+                        fwrite(socket, cmd);
+                        pause(0.1);
+                        disp(cmd);
+                    
+                        cmd = 'VACUUMOF';
+                        fwrite(socket, cmd);
+                        disp(cmd);
+                        pause(0.1);
+                        
+                        % Move up
+                        cmd = sprintf('MVPOSTAB %f,%f,100',tabXY);
+                        fprintf("Moving to %s\n",targetBP);
+                        disp(cmd);
+                        fwrite(socket,cmd);
+                        pause(5);
+
+                    else
+                        
+                        % Player 2 deck is located EASTERN side of table
+                        cmd = sprintf('MVPOSTAB %f,%f,13', blockPosEasternSide);
+                        disp(cmd);
+                        fwrite(socket, cmd);
+                        pause(5);
+
+                        % Pick up the block
+                        cmd = 'VACUUMON';
+                        fwrite(socket, cmd);
+                        disp(cmd);
+                        pause(0.1);
+
+                        cmd = 'SETSOLEN 1';
+                        fwrtie(socket, cmd);
+                        disp(cmd);
+                        pause(0.1);
+                        
+                        % Move up
+                        cmd = sprintf('MVPOSTAB %f,%f,100', blockPosEasternSide);
+                        disp(cmd);
+                        fwrite(socket, cmd);
+                        pause(5);
+                        
+                        % Now move the block into Cell 9 Position
+                        ri = double(70)-64;
+                        ci = 6;
+                        BPi = sub2ind([9 9],ri,ci);
+                        tabXY = BP.XY(BPi,:);
+                       
+                        % Move to BP position
+                        cmd = sprintf('MVPOSTAB %f,%f,13',tabXY);
+                        fprintf("Moving to %s\n",targetBP);
+                        disp(cmd);
+                        fwrite(socket,cmd);
+                        pause(5);
+                        
+                        % Release block in its position
+                        cmd = 'SETSOLEN 0';
+                        fwrite(socket, cmd);
+                        pause(0.1);
+                        disp(cmd);
+                    
+                        cmd = 'VACUUMOF';
+                        fwrite(socket, cmd);
+                        disp(cmd);
+                        pause(0.1);
+                        
+                        % Move up
+                        cmd = sprintf('MVPOSTAB %f,%f,100',tabXY);
+                        fprintf("Moving to %s\n",targetBP);
+                        disp(cmd);
+                        fwrite(socket,cmd);
+                        pause(5);
+                        
+                    end
+                end
+
+        
+            end
+            
+
+            
             pause(0.01);
         end
         % Fall out if no longer connected
