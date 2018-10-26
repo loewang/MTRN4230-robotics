@@ -36,14 +36,27 @@ path = PathPlan(start, goal, obstacles);
 
 if path ~= 0
     % path exists
-    [x,y] = BP2Coord(start);
-    command = sprintf('MVPOSTAB %f,%f,5',x,y);
-    %disp(command) % for debugging
     
+    % convert BP coordinate to coordinates rel. to TableHome
+    [x,y] = BP2Coord(start);
+    
+    % move end effector to above start point - 5cm above BP centre
+    command = sprintf('MVPOSTAB %f,%f,50',x,y);
     fwrite(socket, command);
     str = ReceiveString(socket);
-    inMotion = checkMotion(socket);
     
+    inMotion = checkMotion(socket);
+    while(inMotion)
+       pause(0.1);
+       inMotion = checkMotion(socket);
+    end
+    
+    % move end effector down to start point - 5mm above BP centre
+    command = sprintf('MVPOSTAB %f,%f,5',x,y);
+    fwrite(socket, command);
+    str = ReceiveString(socket);
+    
+    inMotion = checkMotion(socket);
     while(inMotion)
        pause(0.1);
        inMotion = checkMotion(socket);
@@ -54,12 +67,10 @@ if path ~= 0
     while pathCounter <= row
         [x,y] = BP2Coord(path(pathCounter,:));
         command = sprintf('MVPOSTAB %f,%f,5',x,y);
-        % disp(command) % for debugging
-        
         fwrite(socket, command);
         str = ReceiveString(socket);
+        
         inMotion = checkMotion(socket);
-
         while(inMotion)
            pause(0.1);
            inMotion = checkMotion(socket);
@@ -67,14 +78,25 @@ if path ~= 0
         
         pathCounter = pathCounter + 1;
     end
+    
+    % finish by moving above goal point
+    command = sprintf('MVPOSTAB %f,%f,50',x,y);
+    fwrite(socket, command);
+    str = ReceiveString(socket);
+    
+    inMotion = checkMotion(socket);
+    while(inMotion)
+       pause(0.1);
+       inMotion = checkMotion(socket);
+    end
 
 else
     % no path 
 end
-
+    % either reached goal or no path
 end
 
-% either reached goal or no path
+
 
 function [x,y] = BP2Coord(bp)
     % dummy for now
