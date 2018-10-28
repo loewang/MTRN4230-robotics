@@ -1,32 +1,44 @@
-function Ass3GUI2RAPID()
-    clc; clear; close all;
+function Ass3GUI2RAPID_complex()
+    clc; clear; close all; dbstop if error;
 
     %start GUI
     app = IRB120GUI();
     mvapp = MoveGUI();
+
     pause(0.5);
     disp('GUIs OPEN');
     
     prevMoved = 0;
     inmotion = 0;
+%     paused = 0;
     
+    board = zeros(9,9);
+    deckE.state = zeros(6,1);
+    deckW.state = zeros(6,1);
+    
+    % BP coordinate system
     letters = {'A','B','C','D','E','F','G','H','I'}';
     rows = repmat(letters,1,9);
     numbers = {'1','2','3','4','5','6','7','8','9'};
     cols = repmat(numbers,9,1);
     BP.names = strcat(rows,cols);
     
-    BPX = ((35/2 + 1):36:((35/2 + 1) + (36*8)))';
+    % BP XY positions
+    BPX = (18:36:(18 + (36*8)))';
     rows = repmat(BPX,9,1);
     BPY = (-(36*4):36:(36*4));
     cols = repelem(BPY,9)';
     BP.XY = [rows cols];
+    
+    % deck XY positions
+    dEY = repelem(-230,6)';
+    dWY = repelem(230,6)';
+    dX = (18:36:(18 + (36*5)))';
+    BP.deckE = [dX dWY];
+    BP.deckW = [dX dEY];
 
-    if(strcmp(app.ControlModeButtonGroup.SelectedObject.Text,'Robot'))
-        robot_IP_address = '192.168.125.1';
-    else
-        robot_IP_address = '127.0.0.1'; % Simulation ip address
-    end
+%     robot_IP_address = '192.168.125.1';
+    robot_IP_address = '127.0.0.1'; % Simulation ip address
 
     robot_port = 1025;
 
@@ -80,7 +92,7 @@ function Ass3GUI2RAPID()
             % Get Robot status update
             
             fwrite(socket,'GTCONSTA');
-            str = ReceiveString(socket);
+            str = ReceiveState(socket);
             if(strcmp(str,'1'))
                 mvapp.ConveyorReadyLamp.Color = 'g';
                 app.ConveyorStatusLamp.Color = 'g';
@@ -88,57 +100,57 @@ function Ass3GUI2RAPID()
                 mvapp.ConveyorReadyLamp.Color = 'r';
                 app.ConveyorStatusLamp.Color = 'r';
             end
-            
+
             fwrite(socket,'GTVACRUN');
-            str = ReceiveString(socket);
+            str = ReceiveState(socket);
             if(strcmp(str,'1'))
                 app.PumpLamp.Color = 'g';
             else
                 app.PumpLamp.Color = 'r';
             end
-            
+
             fwrite(socket,'GTVACSOL');
-            str = ReceiveString(socket);
+            str = ReceiveState(socket);
             if(strcmp(str,'1'))
                 app.VacSolLamp.Color = 'g';
             else
                 app.VacSolLamp.Color = 'r';
             end
-            
+
             fwrite(socket,'GTCONRUN');
-            str = ReceiveString(socket);
+            str = ReceiveState(socket);
             if(strcmp(str,'1'))
                 app.ConRunLamp.Color = 'g';
             else
                 app.ConRunLamp.Color = 'r';
             end
-            
+
             fwrite(socket,'GTCONDIR');
-            str = ReceiveString(socket);
+            str = ReceiveState(socket);
             if(strcmp(str,'1'))
                 app.DirectionLamp.Color = 'g';
             else
                 app.DirectionLamp.Color = 'r';
             end
-            
+
             fwrite(socket,'GTMOTONS');
-            str = ReceiveString(socket);
+            str = ReceiveState(socket);
             if(strcmp(str,'1'))
                 app.MotorsONLamp.Color = 'g';
             else
                 app.MotorsONLamp.Color = 'r';
             end
-            
+
             fwrite(socket,'GTESTOP1');
-            str = ReceiveString(socket);
+            str = ReceiveState(socket);
             if(strcmp(str,'1'))
                 app.EmergencyStopLamp.Color = 'g';
             else
                 app.EmergencyStopLamp.Color = 'r';
             end
-            
+
             fwrite(socket,'GTEXCERR');
-            str = ReceiveString(socket);
+            str = ReceiveState(socket);
             if(strcmp(str,'0'))
                 app.ExecutionErrorLamp.Color = 'g';
             else
@@ -146,58 +158,31 @@ function Ass3GUI2RAPID()
             end
 
             fwrite(socket,'GTHDENBL');
-            str = ReceiveString(socket);
+            str = ReceiveState(socket);
             if(strcmp(str,'1'))
                 app.MotorsEnableLamp.Color = 'g';
             else
                 app.MotorsEnableLamp.Color = 'r';
             end
-            
+
             fwrite(socket,'GTLTCURT');
-            str = ReceiveString(socket);
+            str = ReceiveState(socket);
             if(strcmp(str,'0'))
                 app.LightCurtainLamp.Color = 'g';
             else
                 app.LightCurtainLamp.Color = 'r';
             end
-            
+
             fwrite(socket,'GTMOTSUP');
-            str = ReceiveString(socket);
+            str = ReceiveState(socket);
             if(strcmp(str,'0'))
                 app.MotionSupervisionLamp.Color = 'g';
             else
                 app.MotionSupervisionLamp.Color = 'r';
             end
             
-            fwrite(socket, 'JNTANGLE');
-            str = ReceiveString(socket);
-            jAng = str2num(str);
-            
-            app.JointAnglesEditField.Value = jAng(1);
-            app.JointAnglesEditField_2.Value = jAng(2);
-            app.JointAnglesEditField_3.Value = jAng(3);
-            app.JointAnglesEditField_4.Value = jAng(4);
-            app.JointAnglesEditField_5.Value = jAng(5);
-            app.JointAnglesEditField_6.Value = jAng(6);
-
-            fwrite(socket, 'EEPOSITN');
-            str = ReceiveString(socket);
-            EEPos = str2num(str);
-            
-            app.EEPosEditField_X.Value = EEPos(1);
-            app.EEPosEditField_Y.Value = EEPos(2);
-            app.EEPosEditField_Z.Value = EEPos(3);
-
-            fwrite(socket, 'EEORIENT');
-            str = ReceiveString(socket);
-            EEOri = str2num(str);
-            
-            app.EEOriEditField_X.Value = EEOri(1);
-            app.EEOriEditField_Y.Value = EEOri(2);
-            app.EEOriEditField_Z.Value = EEOri(3);
-            
             fwrite(socket, 'INMOTION');
-            str = ReceiveString(socket);    
+            str = ReceiveState(socket);    
             if(strcmp(str,'FALSE'))
                 mvapp.RobotReadyLamp.Color = 'g';
                 app.RobotReadyLamp.Color = 'g'; 
@@ -211,6 +196,34 @@ function Ass3GUI2RAPID()
                 app.RobotReadyLamp.Color = 'r';
                 mvapp.RobotReadyLamp.Color = 'r';
                 inmotion = 1;
+            end
+            if(inmotion == 0)
+                fwrite(socket, 'JNTANGLE');
+                str = ReceiveString(socket);
+                jAng = str2num(str);
+
+                app.JointAnglesEditField.Value = jAng(1);
+                app.JointAnglesEditField_2.Value = jAng(2);
+                app.JointAnglesEditField_3.Value = jAng(3);
+                app.JointAnglesEditField_4.Value = jAng(4);
+                app.JointAnglesEditField_5.Value = jAng(5);
+                app.JointAnglesEditField_6.Value = jAng(6);
+
+                fwrite(socket, 'EEPOSITN');
+                str = ReceiveString(socket);
+                EEPos = str2num(str);
+
+                app.EEPosEditField_X.Value = EEPos(1);
+                app.EEPosEditField_Y.Value = EEPos(2);
+                app.EEPosEditField_Z.Value = EEPos(3);
+
+                fwrite(socket, 'EEORIENT');
+                str = ReceiveString(socket);
+                EEOri = str2num(str);
+
+                app.EEOriEditField_X.Value = EEOri(1);
+                app.EEOriEditField_Y.Value = EEOri(2);
+                app.EEOriEditField_Z.Value = EEOri(3);
             end
             
             %Process buttons
@@ -469,12 +482,15 @@ function Ass3GUI2RAPID()
                 pause(0.1);
             end
             
-            %SIMPLE MOVE 
+            %SIMPLE MOVE --------------------------------------------------
             if(mvapp.MOVEButtonPressed)  
                 fwrite(socket,'SETSOLEN 0');
+                app.RobotReadyLamp.Color = 'r';
+                mvapp.RobotReadyLamp.Color = 'r';
+                
                 if(strcmp(mvapp.MOVEButton.Text,"PAUSE"))
-                    mode = mvapp.DropDown.Value;
-                    
+                   mode = mvapp.DropDown.Value;
+                  
                    if(strcmp(mode,'BP to Conveyor'))
                        targetBP = mvapp.BP1EditField.Value;
                        ri = double(targetBP(1))-64;
@@ -482,133 +498,24 @@ function Ass3GUI2RAPID()
                        BPi = sub2ind([9 9],ri,ci);
                        tabXY = BP.XY(BPi,:);
                        
-
-                       %move to BP position
-                       cmd = sprintf('MVPOSTAB %f,%f,13',tabXY);
-                       fprintf("Moving to %s\n",targetBP);
-                       disp(cmd);
-                       fwrite(socket,cmd);
-                       pause(5);
-                       
-                       % pick up block
-                       cmd = 'VACUUMON';
-                       fwrite(socket,cmd);
-                       disp(cmd);
-                       pause(0.1);
-                       cmd = 'SETSOLEN 1';
-                       fwrite(socket,cmd);
-                       disp(cmd);
-                       pause(0.1);
-                       
-                       %move to conveyor
-                       cmd = sprintf('MVPOSTAB %f,%f,100',tabXY);
-                       fwrite(socket,cmd);
-                       disp(cmd);
-                       pause(3);
-                       cmd ='SETPOSES 90,0,20,0,0,0';
-                       fwrite(socket,cmd);
-                       disp(cmd);
-                       pause(5);
-                       cmd = 'MVPOSCON 0,0,100';
-                       fwrite(socket,cmd);
-                       disp(cmd);
-                       pause(1);
-                       
-                       blockreleased = 0;
-                       while(~blockreleased)
-                           fwrite(socket, 'INMOTION');
-                           str = ReceiveString(socket); 
-                           pause(0.2);
-                           if(strcmp(str,'FALSE'))
-                               cmd = 'SETSOLEN 0';
-                               fwrite(socket,cmd);
-                               disp(cmd);
-                               pause(0.1);
-                               
-                               cmd = 'VACUUMOF';
-                               fwrite(socket,cmd);
-                               disp(cmd);
-                               pause(0.1);
-                               blockreleased = 1;
-                           end
-                       end
-
-                       %move back to table 
-                       cmd = 'MVPOSCON 0,0,200';
-                       fwrite(socket,cmd);
-                       disp(cmd); 
-                       pause(3);
-                       cmd ='SETPOSES 0,0,20,0,0,0';
-                       fwrite(socket,cmd);
-                       disp(cmd);
-                       pause(6);
-                       cmd = 'MVPOSTAB 0,0,14';
-                       fwrite(socket,cmd);
-                       disp(cmd);
-                       
+                       board(ri,ci) = 0;
+                       BPpickup(socket,tabXY);
+                       conXY = [0 0];
+                       CONdropoff(socket,conXY)
+                     
                    elseif(strcmp(mode,'Conveyor to BP'))
                        targetBP = mvapp.BP1EditField.Value;
                        ri = double(targetBP(1))-64;
                        ci = str2double(targetBP(2));
                        BPi = sub2ind([9 9],ri,ci);
                        tabXY = BP.XY(BPi,:);
+                       
+                       board(ri,ci) = 1;
+                       
+                       conXY = [0 0];
+                       CONpickup(socket,conXY);
+                       BPdropoff(socket,tabXY);
 
-                       %move to conveyor block
-                       cmd ='SETPOSES 90,0,20,0,0,0';
-                       fwrite(socket,cmd);
-                       disp(cmd);
-                       pause(6);
-                       cmd = 'MVPOSCON 0,0,13';
-                       disp(cmd);
-                       fwrite(socket,cmd);
-                       pause(3);
-                       
-                       % pick up block
-                       cmd = 'VACUUMON';
-                       fwrite(socket,cmd);
-                       disp(cmd);
-                       pause(0.1);
-                       cmd = 'SETSOLEN 1';
-                       fwrite(socket,cmd);
-                       disp(cmd);
-                       pause(0.2);
-                       
-                       %move to table
-                       cmd = 'MVPOSCON 0,0,150';
-                       disp(cmd);
-                       fwrite(socket,cmd);
-                       pause(3);
-                       cmd ='SETPOSES 0,0,20,0,0,0';
-                       fwrite(socket,cmd);
-                       disp(cmd);
-                       pause(5);
-                       cmd = sprintf('MVPOSTAB %f,%f,14',tabXY);
-                       fwrite(socket,cmd);
-                       disp(cmd);
-                       pause(3);
-                       
-                       blockreleased = 0;
-                       while(~blockreleased)
-                           fwrite(socket, 'INMOTION');
-                           str = ReceiveString(socket); 
-                           pause(0.2);
-                           if(strcmp(str,'FALSE'))
-                               cmd = 'SETSOLEN 0';
-                               fwrite(socket,cmd);
-                               disp(cmd);
-                               pause(0.1);
-                               
-                               cmd = 'VACUUMOF';
-                               fwrite(socket,cmd);
-                               disp(cmd);
-                               pause(0.1);
-                               blockreleased = 1;
-                           end
-                       end
-                       cmd = 'MVPOSTAB 0,0,14';
-                       fwrite(socket,cmd);
-                       disp(cmd);
-                       
                    elseif(strcmp(mode,'BP to BP'))
                        BP1 = mvapp.BP1EditField.Value;
                        ri = double(BP1(1))-64;
@@ -616,110 +523,46 @@ function Ass3GUI2RAPID()
                        BPi = sub2ind([9 9],ri,ci);
                        tabXY1 = BP.XY(BPi,:);
                        
+                       board(ri,ci) = 0;
+                       
                        BP2 = mvapp.BP2EditField.Value;
                        ri = double(BP2(1))-64;
                        ci = str2double(BP2(2));
                        BPi = sub2ind([9 9],ri,ci);
                        tabXY2 = BP.XY(BPi,:);
-
-                       %move to start BP
-                       cmd ='SETPOSES 0,0,20,0,0,0';
-                       fwrite(socket,cmd);
-                       disp(cmd);
-                       pause(3);
-                       cmd = sprintf('MVPOSTAB %f,%f,14',tabXY1);
-                       fwrite(socket,cmd);
-                       disp(cmd);
-                       pause(6);
                        
-                       % pick up block
-                       cmd = 'VACUUMON';
-                       fwrite(socket,cmd);
-                       disp(cmd);
-                       pause(0.1);
-                       cmd = 'SETSOLEN 1';
-                       fwrite(socket,cmd);
-                       disp(cmd);
-                       pause(1);
+                       board(ri,ci) = 1;
                        
-                       %move to goal BP
-                       cmd = sprintf('MVPOSTAB %f,%f,50',tabXY1);
-                       fwrite(socket,cmd);
-                       disp(cmd);
-                       pause(1);
-                       cmd = sprintf('MVPOSTAB %f,%f,50',tabXY2);
-                       fwrite(socket,cmd);
-                       disp(cmd);
-                       pause(6);
-                       cmd = sprintf('MVPOSTAB %f,%f,14',tabXY2);
-                       fwrite(socket,cmd);
-                       disp(cmd);
-                       pause(3);
-            
-                       cmd = 'SETSOLEN 0';
-                       fwrite(socket,cmd);
-                       disp(cmd);
-                       pause(0.1);
-                       
-                       cmd = 'VACUUMOF';
-                       fwrite(socket,cmd);
-                       disp(cmd);
-                       pause(0.1);
-                       
-                       cmd = sprintf('MVPOSTAB %f,%f,50',tabXY2);
-                       fwrite(socket,cmd);
-                       disp(cmd);
-                       pause(3);       
-                       cmd = 'MVPOSTAB 0,0,14';
-                       fwrite(socket,cmd);
-                       disp(cmd);
-                       
-                   else
+                       BPpickup(socket,tabXY1);
+                       BPdropoff(socket,tabXY2);
+      
+                   else % Rotate BP
                        targetBP = mvapp.BP1EditField.Value;
                        ri = double(targetBP(1))-64;
                        ci = str2double(targetBP(2));
                        BPi = sub2ind([9 9],ri,ci);
                        tabXY = BP.XY(BPi,:);
                        
-                       %move to BP
-                       cmd ='SETPOSES 0,0,20,0,0,0';
-                       fwrite(socket,cmd);
-                       disp(cmd);
-                       pause(3);
-                       cmd = sprintf('MVPOSTAB %f,%f,14',tabXY);
+                       %move to BP                       
+                       BPpickup(socket,tabXY);
+                       fwrite(socket, 'JNTANGLE');
+                       str = ReceiveString(socket);
+                       jAng = str2num(str);
+                       
+                       angle = str2double(mvapp.BP2EditField.Value);
+                       cmd = sprintf('SETPOSES %f,%f,%f,%f,%f,%f',jAng(1:5),angle);
                        fwrite(socket,cmd);
                        disp(cmd);
                        pause(6);
                        
-                       % pick up block
-                       cmd = 'VACUUMON';
-                       fwrite(socket,cmd);
-                       disp(cmd);
-                       pause(0.1);
-                       cmd = 'SETSOLEN 1';
-                       fwrite(socket,cmd);
-                       disp(cmd);
-                       pause(1);
-                       
-                       cmd = sprintf('MVPOSTAB %f,%f,50',tabXY);
-                       fwrite(socket,cmd);
-                       disp(cmd);
-                       pause(2);
-                       
-                       angle = str2double(mvapp.BP2EditField.Value);
-                       cmd = sprintf('SETPOSES 0,0,20,0,0,%f',angle);
-                       fwrite(socket,cmd);
-                       disp(cmd);
-                       pause(2);
-                       
-                       cmd = sprintf('MVPOSTAB %f,%f,14',tabXY);
+                       cmd = sprintf('MVLINEAR %f,%f,14',tabXY);
                        fwrite(socket,cmd);
                        disp(cmd);
                        
                        blockreleased = 0;
                        while(~blockreleased)
                            fwrite(socket, 'INMOTION');
-                           str = ReceiveString(socket); 
+                           str = ReceiveState(socket); 
                            pause(0.2);
                            if(strcmp(str,'FALSE'))
                                cmd = 'SETSOLEN 0';
@@ -733,240 +576,88 @@ function Ass3GUI2RAPID()
                                pause(0.1);
                                blockreleased = 1;
                            end
-                           cmd = sprintf('MVPOSTAB %f,%f,50',tabXY);
-                           fwrite(socket,cmd);
-                           disp(cmd);
-                           pause(3);
-                           cmd = 'MVPOSTAB 0,0,14';
-                           fwrite(socket,cmd);
-                           disp(cmd);
                        end
-                       
+
+                       cmd = 'MVPOSTAB 0,0,14';
+                       fwrite(socket,cmd);
+                       disp(cmd);
                    end
                 end
 
                 mvapp.MOVEButtonPressed = 0;
                 pause(0.1);
             end
-            
-            
+           
+            %COMPLEX MOVE-------------------------------------------------
          
-            % ---------------------------------------- Fill button pressed
+            % Fill button pressed
             if(mvapp.FILLButtonPressed)
                 fwrite(socket, 'SETSOLEN 0');
                 
                 % check if Player 1
                 if(strcmp(mvapp.DropDown_2.Value, 'Player 1'))
-                
-                    % Move to conveyer to pick up block
-                    cmd = 'SETPOSES 90,0,20,0,0,0';
-                    fwrite(socket, cmd);
-                    disp(cmd);
-                    pause(5);
                     
-                    cmd = 'MVPOSCON 0,0,100';
-                    fwrite(socket, cmd);
-                    disp(cmd);
-                    pause(1);
-                    
-                    % Pick up block
-                    cmd = 'VACUUMON';
-                    fwrite(socket, cmd);
-                    disp(cmd);
-                    pause(0.5);
-                    
-                    cmd = 'SETSOLEN 1';
-                    fwrite(socket, cmd);
-                    disp(cmd);
-                    pause(0.1);
-                    
-                    % Move block to table
-                    cmd = 'MVPOSCON 0,0,200';
-                    fwrite(socket, cmd);
-                    disp(cmd);
-                    pause(3);
-                    
-                    % Depending where next block is, move to that pos
-                    % Block pos in an array for WESTERN SIDE (Player 1)
-                    cmd = sprintf('MVPOSTAB %f,%f,14', blockPosWesternSide);
-                    fwrite(socket, cmd);
-                    disp(cmd);
-                    pause(1);
-                    
-                    % Release block in its position
-                    cmd = 'SETSOLEN 0';
-                    fwrite(socket, cmd);
-                    pause(0.1);
-                    disp(cmd);
-                    
-                    cmd = 'VACUUMOF';
-                    fwrite(socket, cmd);
-                    disp(cmd);
-                    pause(0.1);
-                    
-                    % Repeat this 5 more times since 6 blocks
+                    emptyBP = BP.deckW(deckW.state==0,:);
+                    for i = 1:length(emptyBP)
+        
+                        conXY = [0 0];
+                        tabXY = emptyBP(i,:);
+                        CONpickup(socket,conXY);       
+                        BPdropoff(socket,tabXY); 
+                        pause(6);
+                        deckW.state(i) = 1;
+                    end
                     
                 % Player 2
                 else
                     
-                    % Move to conveyer to pick up block
-                    cmd = 'SETPOSES 90,0,20,0,0,0';
-                    fwrite(socket, cmd);
-                    disp(cmd);
-                    pause(5);
-                    
-                    cmd = 'MVPOSCON 0,0,100';
-                    fwrite(socket, cmd);
-                    disp(cmd);
-                    pause(1);
-                    
-                    % Pick up block
-                    cmd = 'VACUUMON';
-                    fwrite(socket, cmd);
-                    disp(cmd);
-                    pause(0.5);
-                    
-                    cmd = 'SETSOLEN 1';
-                    fwrite(socket, cmd);
-                    disp(cmd);
-                    pause(0.1);
-                    
-                    % Move block to table
-                    cmd = 'MVPOSCON 0,0,200';
-                    fwrite(socket, cmd);
-                    disp(cmd);
-                    pause(3);
-                    
-                    % Depending where next block is, move to that pos
-                    % Block pos in an array for EASTERN SIDE (Player 2)
-                    cmd = sprintf('MVPOSTAB %f,%f,14', blockPosEasternSide);
-                    fwrite(socket, cmd);
-                    disp(cmd);
-                    
-                    % Release block in its position
-                    cmd = 'SETSOLEN 0';
-                    fwrite(socket, cmd);
-                    pause(0.1);
-                    disp(cmd);
-                    
-                    cmd = 'VACUUMOF';
-                    fwrite(socket, cmd);
-                    disp(cmd);
-                    pause(0.1);
-                    
-                    % Repeat this 5 more times since 6 blocks
-                    
+                    emptyBP = BP.deckE(deckE.state==0,:);
+                    for i = 1:length(emptyBP)
+        
+                        conXY = [0 0];
+                        tabXY = emptyBP(i,:);
+                        CONpickup(socket,conXY);       
+                        BPdropoff(socket,tabXY); 
+                        pause(6);
+                        deckE.state(i) = 1;
+                    end
                 end
+                mvapp.FILLButtonPressed = 0;
             end
-            
-            
+
             %--------------------------------------- Discard button pressed
             if(mvapp.DISCARDButtonPressed)
                 fwrite(socket, 'SETSOLEN 0');
                 
                 % check if Player 1
                 if(strcmp(mvapp.DropDown_2.Value, 'Player 1'))
-                
-                    % Move to first block pos (Western Side for Player 1)
-                    cmd = sprintf('MVPOSTAB %f,%f,13', blockPosWesternSide);
-                    disp(cmd);
-                    fwrite(socket, cmd);
-                    pause(5);
                     
-                    % Pick up the block
-                    cmd = 'VACUUMON';
-                    fwrite(socket, cmd);
-                    disp(cmd);
-                    pause(0.1);
+                    filledBP = BP.deckW(deckW.state==1,:);
                     
-                    cmd = 'SETSOLEN 1';
-                    fwrtie(socket, cmd);
-                    disp(cmd);
-                    pause(0.1);
-                    
-                    % Move block to conveyor
-                    cmd = sprintf('MVPOSTAB %f,%f,100', blockPosWesternSide);
-                    fwrite(socket, cmd);
-                    disp(cmd);
-                    pause(1);
-                    
-                    cmd = 'SETPOSES 90,0,20,0,0,0';
-                    fwrite(socket, cmd);
-                    disp(cmd);
-                    pause(3);
-                    
-                    cmd = 'MVPOSCON 0,0,100';
-                    fwrite(socket, cmd);
-                    disp(cmd);
-                    pause(3);
-                    
-                    % Release block
-                    cmd = 'SETSOLEN 0';
-                    fwrite(socket, cmd);
-                    pause(0.1);
-                    disp(cmd);
-                    
-                    cmd = 'VACUUMOF';
-                    fwrite(socket, cmd);
-                    disp(cmd);
-                    pause(0.1);
-                    
-                    % Now move back to second Western Pos in array
-                    
-                    % Repeat until all blocks placed back.
+                    for i = 1:length(filledBP)
+                        
+                        conXY = [0 0];
+                        tabXY = filledBP(i,:);
+                        BPpickup(socket,tabXY);
+                        CONdropoff(socket,conXY);
+                        pause(6);
+                        deckW.state(i) = 0;
+                    end
 
                 % Player 2
                 else
+                     filledBP = BP.deckE(deckE.state==1,:);
                     
-                    % Move to first block pos (Eastern Side for Player 2)
-                    cmd = sprintf('MVPOSTAB %f,%f,13', blockPosEasternSide);
-                    disp(cmd);
-                    fwrite(socket, cmd);
-                    pause(5);
-                    
-                    % Pick up the block
-                    cmd = 'VACUUMON';
-                    fwrite(socket, cmd);
-                    disp(cmd);
-                    pause(0.1);
-                    
-                    cmd = 'SETSOLEN 1';
-                    fwrtie(socket, cmd);
-                    disp(cmd);
-                    pause(0.1);
-                    
-                    % Move block to conveyor
-                    cmd = sprintf('MVPOSTAB %f,%f,100', blockPosEasternSide);
-                    fwrite(socket, cmd);
-                    disp(cmd);
-                    pause(1);
-                    
-                    cmd = 'SETPOSES 90,0,20,0,0,0';
-                    fwrite(socket, cmd);
-                    disp(cmd);
-                    pause(3);
-                    
-                    cmd = 'MVPOSCON 0,0,100';
-                    fwrite(socket, cmd);
-                    disp(cmd);
-                    pause(3);
-                    
-                    % Release block
-                    cmd = 'SETSOLEN 0';
-                    fwrite(socket, cmd);
-                    pause(0.1);
-                    disp(cmd);
-                    
-                    cmd = 'VACUUMOF';
-                    fwrite(socket, cmd);
-                    disp(cmd);
-                    pause(0.1);
-                    
-                    % Now move back to second Eastern Pos in array
-                    
-                    % Repeat until all blocks placed back.
-               
+                     for i = 1:length(filledBP)
+                        conXY = [0 0];
+                        tabXY = filledBP(i,:);
+                        BPpickup(socket,tabXY);
+                        CONdropoff(socket,conXY);
+                        pause(6);
+                        deckE.state(i) = 0;
+                     end
                 end
+                mvapp.DISCARDButtonPressed = 0;
             end
 
             
@@ -974,83 +665,101 @@ function Ass3GUI2RAPID()
             if(mvapp.SORTButtonPressed)
                 fwrite(socket, 'SETSOLEN 0');
                 
-                % check if Player 1
-                if(strcmp(mvapp.DropDown_2.Value, 'Player 1'))
+                tempXY = [250 0];
                 
-                % Player 2
-                else
-                    
+                %1 = shape
+                %0 = letter
+                deckE.type = NaN(6,1);
+                deckE.type(:) = 1;
+                deckW.type = NaN(6,1);
+                deckW.type(:) = 0;
+                
+                for i = 1:6
+                    if(deckE.type(i)==1)
+                        tabXY = BP.deckE(i,:);
+                        BPpickup(socket,tabXY);
+                        pause(6);
+                        BPdropoff(socket,tempXY);
+                        pause(6);
+                        deckE.type(i) = NaN; 
+                        letteri = find(deckW.type==0,1);
+                        tabXY = BP.deckW(letteri,:);
+                        BPpickup(socket,tabXY);
+                        pause(6);
+                        tabXY = BP.deckE(i,:);
+                        BPdropoff(socket,tabXY);
+                        pause(6);
+                        deckE.type(i) = 0; 
+                        BPpickup(socket,tempXY);
+                        pause(6);
+                        tabXY = BP.deckW(letteri,:);
+                        BPdropoff(socket,tabXY);
+                        pause(6);
+                        deckW.type(letteri) = 1; 
+                    end
                 end
+
+                mvapp.SORTButtonPressed = 0;
             end
-            
-            
-            
+
             %------------------------------------------ Clear table pressed
             if(mvapp.CLEARButtonPressed)
                 fwrite(socket, 'SETSOLEN 0');
                 
-                % Block positions placed in an array 'BlockPoses'
-                % Move to the first block pos
-                cmd = sprintf('MVPOSTAB %f,%f,13', BlockPoses);
-                disp(cmd);
-                fwrite(socket,cmd);
-                pause(5);
+                scatteredBP = zeros(16,2); % array of scatters block XY coords
                 
-                % Pick up block
-                cmd = 'VACUUMON';
-                fwrite(socket, cmd);
-                disp(cmd);
-                pause(0.1);
-                
-                cmd = 'SETSOLEN 1';
-                fwrite(socket, cmd);
-                disp(cmd);
-                pause(0.1);
-                
-                % Move to conveyor
-                cmd = sprintf('MVPOSTAB %f,%f,100', BlockPoses);
-                fwrite(socket, cmd);
-                disp(cmd);
-                pause(3);
-                
-                cmd = 'SETPOSES 90,0,20,0,0,0';
-                fwrite(socket, cmd);
-                disp(cmd);
-                pause(3);
+                for i = 1:size(scatteredBP,1)
+                    tabXY = scatteredBP(i,:);
+                    BPpickup(socket,tabXY);
+                    pause(6);
+                    conXY = [0 0];
+                    CONdropoff(socket,conXY);
+                    pause(6);
+                end
 
-                cmd = 'MVPOSCON 0,0,100';
-                fwrite(socket, cmd);
-                disp(cmd);
-                pause(3);
-
-                % Release block
-                cmd = 'SETSOLEN 0';
-                fwrite(socket, cmd);
-                pause(0.1);
-                disp(cmd);
-
-                cmd = 'VACUUMOF';
-                fwrite(socket, cmd);
-                disp(cmd);
-                pause(0.1);
-
-                % Now move back to second element or block in the 
-                % BlockPoses array, and repeat until all finished
+                mvapp.CLEARButtonPressed = 0;
             end
             
             
             %------------------------------------------- Fill table pressed
             if(mvapp.TableFILLButtonPressed)
                 fwrite(socket, 'SETSOLEN 0');
+
+                for i = 1:6
+                    %find empty BPs to deploy to
+                    freeBPi = find(board==0,1);
+                    freeBP = BP.XY(freeBPi,:);
+                    tabXY = BP.deckE(i,:);
+                    BPpickup(socket,tabXY);
+                    pause(6);
+                    tabXY = freeBP;
+                    BPdropoff(socket,tabXY);
+                    pause(6);
+                    [ex,ey] = ind2sub([9 9],freeBPi);
+                    board(ex,ey) = 1;
+                    deckE.state(i) = 0;
+                end
                 
-                
+                for i = 1:6
+                    %find empty BPs to deploy to
+                    freeBPi = find(board==0,1);
+                    freeBP = BP.XY(freeBPi,:);
+                    tabXY = BP.deckW(i,:);
+                    BPpickup(socket,tabXY);
+                    pause(6);
+                    tabXY = freeBP;
+                    BPdropoff(socket,tabXY);
+                    pause(6);
+                    [ex,ey] = ind2sub([9 9],freeBPi);
+                    board(ex,ey) = 1;
+                    deckW.state(i) = 0;
+                end
+                mvapp.TableFILLButtonPressed = 0;
             end
 
-            
-            %--------------------------------------- PVP TIC TAC TOE Code
-            
-            if(tttapp.PvPButtonPressed)
-                
+            %-----------------------------------------PVP TicTacToe pressed
+            if(mvapp.PvPButtonPressed)
+
                 % Open TTT GUI
                 tttapp = TTTGUI();
                 
@@ -2147,11 +1856,14 @@ function Ass3GUI2RAPID()
                         
                     end
                 end
-
-        
+                mvapp.PvPButtonPressed = 0;
             end
             
-
+            if(mvapp.AIvPButtonPressed)
+                TTTapp = TTTGUI();
+                
+                mvapp.AIvPButtonPressed = 0;
+            end
             
             pause(0.01);
         end
@@ -2189,11 +1901,146 @@ function Ass3GUI2RAPID()
     disp('IRB120 Session Ended');
 end
 
+function BPpickup(socket,tabXY)
+    %move to BP position
+    cmd = sprintf('MVPOSTAB %f,%f,100',tabXY);
+    fwrite(socket,cmd);
+    disp(cmd);
+    pause(8);
+
+    % pick up block
+    cmd = 'VACUUMON';
+    fwrite(socket,cmd);
+    disp(cmd);
+    pause(0.1);
+    cmd = 'SETSOLEN 1';
+    fwrite(socket,cmd);
+    disp(cmd);
+    pause(0.1);
+
+    cmd = sprintf('MVPOSTAB %f,%f,13',tabXY);
+    disp(cmd);
+    fwrite(socket,cmd);
+    pause(3);
+
+    %move to conveyor
+    cmd = sprintf('MVPOSTAB %f,%f,100',tabXY);
+    fwrite(socket,cmd);
+    disp(cmd);
+    pause(3);
+end
+
+function CONdropoff(socket,conXY)
+    cmd = sprintf('MVPOSCON %f,%f,100',conXY);
+    fwrite(socket,cmd);
+    disp(cmd);
+    pause(8);
+
+    cmd = sprintf('MVPOSCON %f,%f,14',conXY);
+    fwrite(socket,cmd);
+    disp(cmd);
+    pause(3);
+
+    blockreleased = 0;
+    while(~blockreleased)
+       fwrite(socket, 'INMOTION');
+       str = ReceiveState(socket); 
+       pause(0.2);
+       if(strcmp(str,'FALSE'))
+           cmd = 'SETSOLEN 0';
+           fwrite(socket,cmd);
+           disp(cmd);
+           pause(0.1);
+
+           cmd = 'VACUUMOF';
+           fwrite(socket,cmd);
+           disp(cmd);
+           pause(0.1);
+           blockreleased = 1;
+       end
+    end
+
+    %move back to table 
+    cmd = sprintf('MVPOSCON %f,%f,200',conXY);
+    fwrite(socket,cmd);
+    disp(cmd); 
+    pause(3);
+
+    cmd = 'MVPOSTAB 0,0,14';
+    fwrite(socket,cmd);
+    disp(cmd);
+end
+
+function CONpickup(socket,conXY)
+   cmd = sprintf('MVPOSCON %f,%f,200',conXY);
+   disp(cmd);
+   fwrite(socket,cmd);
+   pause(8);
+
+   % pick up block
+   cmd = 'VACUUMON';
+   fwrite(socket,cmd);
+   disp(cmd);
+   pause(0.1);
+   cmd = 'SETSOLEN 1';
+   fwrite(socket,cmd);
+   disp(cmd);
+   pause(0.2);
+
+   cmd = sprintf('MVPOSCON %f,%f,14',conXY);
+   disp(cmd);
+   fwrite(socket,cmd);
+   pause(3);
+
+   cmd = sprintf('MVPOSCON %f,%f,200',conXY);
+   disp(cmd);
+   fwrite(socket,cmd);
+   pause(3);
+end
+
+function BPdropoff(socket,tabXY)
+   cmd = sprintf('MVPOSTAB %f,%f,100',tabXY);
+   fwrite(socket,cmd);
+   disp(cmd);
+   pause(8);
+   
+   cmd = sprintf('MVPOSTAB %f,%f,14',tabXY);
+   fwrite(socket,cmd);
+   disp(cmd);
+   pause(3);
+   
+   blockreleased = 0;
+   while(~blockreleased)
+       fwrite(socket, 'INMOTION');
+       str = ReceiveState(socket); 
+       pause(0.2);
+       if(strcmp(str,'FALSE'))
+           
+           cmd = 'SETSOLEN 0';
+           fwrite(socket,cmd);
+           disp(cmd);
+           pause(0.1);
+
+           cmd = 'VACUUMOF';
+           fwrite(socket,cmd);
+           disp(cmd);
+           pause(0.1);
+           blockreleased = 1;
+       end
+   end
+   cmd = 'MVPOSTAB 0,0,14';
+   fwrite(socket,cmd);
+   disp(cmd);
+end
+
+function [str] =  ReceiveState(socket)
+    data = fgetl(socket);
+    str = char(data);
+end
+
 function [str] =  ReceiveString(socket)
     data = fgetl(socket);
-    %str = strcat(char(data),'\n');
-    str = char(data);
-%     disp(str);
+    str = data;
 end
 
 function SwitchCommand(Switch,socket,state1,command0,command1)   
