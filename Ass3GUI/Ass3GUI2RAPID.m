@@ -4,13 +4,13 @@ function Ass3GUI2RAPID_complex()
     %start GUI
     app = IRB120GUI();
     mvapp = MoveGUI();
+    tabapp = TableFeedGUI();
 
     pause(0.5);
     disp('GUIs OPEN');
     
     prevMoved = 0;
     inmotion = 0;
-%     paused = 0;
     
     board = zeros(9,9);
     deckE.state = zeros(6,1);
@@ -777,114 +777,33 @@ function Ass3GUI2RAPID_complex()
                         
                         % Player 1 deck is located WESTERN side of table
                         % Move to first block pos (Western Side for Player 1)
-                        cmd = sprintf('MVPOSTAB %f,%f,13', blockPosWesternSide);
-                        disp(cmd);
-                        fwrite(socket, cmd);
-                        pause(5);
-
-                        % Pick up the block
-                        cmd = 'VACUUMON';
-                        fwrite(socket, cmd);
-                        disp(cmd);
-                        pause(0.1);
-
-                        cmd = 'SETSOLEN 1';
-                        fwrtie(socket, cmd);
-                        disp(cmd);
-                        pause(0.1);
-                        
-                        % Move up
-                        cmd = sprintf('MVPOSTAB %f,%f,100', blockPosWesternSide);
-                        disp(cmd);
-                        fwrite(socket, cmd);
-                        pause(5);
+                        oi = find(deckW.state==1,1);
+                        tabXY = BP.deckW(oi,:);
+                        BPpickup(socket,tabXY);
+                        pause(6);
                         
                         % Now move the block into Cell 1 Position
                         ri = double(68)-64;
                         ci = 4;
                         BPi = sub2ind([9 9],ri,ci);
                         tabXY = BP.XY(BPi,:);
-                       
-                        % Move to BP position
-                        cmd = sprintf('MVPOSTAB %f,%f,13',tabXY);
-                        fprintf("Moving to %s\n",targetBP);
-                        disp(cmd);
-                        fwrite(socket,cmd);
-                        pause(5);
-                        
-                        % Release block in its position
-                        cmd = 'SETSOLEN 0';
-                        fwrite(socket, cmd);
-                        pause(0.1);
-                        disp(cmd);
-                    
-                        cmd = 'VACUUMOF';
-                        fwrite(socket, cmd);
-                        disp(cmd);
-                        pause(0.1);
-                        
-                        % Move up
-                        cmd = sprintf('MVPOSTAB %f,%f,100',tabXY);
-                        fprintf("Moving to %s\n",targetBP);
-                        disp(cmd);
-                        fwrite(socket,cmd);
-                        pause(5);
+                        BPdropoff(socket,tabXY);
+                        pause(6);
 
                     else
                         
-                        % Player 2 deck is located EASTERN side of table
-                        cmd = sprintf('MVPOSTAB %f,%f,13', blockPosEasternSide);
-                        disp(cmd);
-                        fwrite(socket, cmd);
-                        pause(5);
-
-                        % Pick up the block
-                        cmd = 'VACUUMON';
-                        fwrite(socket, cmd);
-                        disp(cmd);
-                        pause(0.1);
-
-                        cmd = 'SETSOLEN 1';
-                        fwrtie(socket, cmd);
-                        disp(cmd);
-                        pause(0.1);
-                        
-                        % Move up
-                        cmd = sprintf('MVPOSTAB %f,%f,100', blockPosEasternSide);
-                        disp(cmd);
-                        fwrite(socket, cmd);
-                        pause(5);
+                        xi = find(deckE.state==1,1);
+                        tabXY = BP.deckE(xi,:);
+                        BPpickup(socket,tabXY);
+                        pause(6);
                         
                         % Now move the block into Cell 1 Position
                         ri = double(68)-64;
                         ci = 4;
                         BPi = sub2ind([9 9],ri,ci);
                         tabXY = BP.XY(BPi,:);
-                       
-                        % Move to BP position
-                        cmd = sprintf('MVPOSTAB %f,%f,13',tabXY);
-                        fprintf("Moving to %s\n",targetBP);
-                        disp(cmd);
-                        fwrite(socket,cmd);
-                        pause(5);
-                        
-                        % Release block in its position
-                        cmd = 'SETSOLEN 0';
-                        fwrite(socket, cmd);
-                        pause(0.1);
-                        disp(cmd);
-                    
-                        cmd = 'VACUUMOF';
-                        fwrite(socket, cmd);
-                        disp(cmd);
-                        pause(0.1);
-                        
-                        % Move up
-                        cmd = sprintf('MVPOSTAB %f,%f,100',tabXY);
-                        fprintf("Moving to %s\n",targetBP);
-                        disp(cmd);
-                        fwrite(socket,cmd);
-                        pause(5);
+                        BPdropoff(socket,tabXY);
+                        pause(6);
                         
                     end 
                 end
@@ -1893,6 +1812,7 @@ function Ass3GUI2RAPID_complex()
         if(app.QuitButton_Pressed)
             mvapp.delete();
             app.delete();
+            tabapp.delete();
             break;
         end
         
