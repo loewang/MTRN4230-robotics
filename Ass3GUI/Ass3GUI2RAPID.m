@@ -41,12 +41,9 @@ function Ass3GUI2RAPID()
     ti = sub2ind([9 9],[4 4 4 5 5 5 6 6 6],[4 5 6 4 5 6 4 5 6]); %D4
     BP.TTT = BP.XY(ti,:);
     
-    % table data
-    table.BP = [];
-    table.type = [];
-    table.X = [];
-    table.Y = [];
-    table.theta = [];
+    % detected blocks buffer
+%     tablestate = cell(28,1);
+%     listi = 1;
     
 %     robot_IP_address = '192.168.125.1';
     robot_IP_address = '127.0.0.1'; % Simulation ip address
@@ -236,14 +233,6 @@ function Ass3GUI2RAPID()
                 app.EEOriEditField_Y.Value = EEOri(2);
                 app.EEOriEditField_Z.Value = EEOri(3);
             end
-            
-            table.BP = {'A1','B2'}';
-            table.type = {'LETTER','SHAPE'}';
-            table.X = {1;2};
-            table.Y = {3;4};
-            table.theta = {5;6};
-            tablestate = [table.BP table.type table.X table.Y table.theta];
-            tabapp.UITable.Data = tablestate;
             
             %Process buttons--------------------------------------------
             if(mvapp.LoadingBayButtonPressed)
@@ -517,11 +506,25 @@ function Ass3GUI2RAPID()
                        BPi = sub2ind([9 9],ri,ci);
                        tabXY = BP.XY(BPi,:);
                        
-                       board(ri,ci) = 0;
-                       BPpickup(socket,tabXY);
-                       conXY = [0 0];
-                       CONdropoff(socket,conXY)
-                     
+                       if(board(ri,ci)==0)
+                           msg = sprintf('There is no block at %s',targetBP);
+                           mvapp.StatusEditField_2.Value = msg;
+                           pause(2);
+                       else
+                           msg = sprintf('Moving %s to conveyor...',targetBP);
+                           mvapp.StatusEditField_2.Value = msg;
+                           board(ri,ci) = 0;
+                           BPpickup(socket,tabXY);
+                           conXY = [0 0];
+                           CONdropoff(socket,conXY);
+                           
+%                            %remove block from list
+%                            editBlocki = strfind(targetBP,tablestate);
+%                            [editRow,~] = ind2sub(size(tablestate),editBlocki);
+%                            tablestate(editRow,:) = [];
+%                            tabapp.TextArea.Value = tablestate;
+                       end
+                       
                    elseif(strcmp(mode,'Conveyor to BP'))
                        targetBP = mvapp.BP1EditField.Value;
                        ri = double(targetBP(1))-64;
@@ -529,31 +532,62 @@ function Ass3GUI2RAPID()
                        BPi = sub2ind([9 9],ri,ci);
                        tabXY = BP.XY(BPi,:);
                        
-                       board(ri,ci) = 1;
-                       
-                       conXY = [0 0];
-                       CONpickup(socket,conXY);
-                       BPdropoff(socket,tabXY);
+                       if(board(ri,ci)==1)
+                           msg = sprintf('%s is already occupied!',targetBP);
+                           mvapp.StatusEditField_2.Value = msg;
+                           pause(2);
+                       else
+                           msg = sprintf('Moving to block to %s...',targetBP);
+                           mvapp.StatusEditField_2.Value = msg;
+                           board(ri,ci) = 1;
+                           conXY = [0 0];
+                           CONpickup(socket,conXY);
+                           BPdropoff(socket,tabXY);
+                           
+%                            %add block to list
+%                            blockdata = sprintf('%s  SHAPE   %3.1f   %3.1f   %3d',targetBP, tabXY,90);
+%                            tablestate{listi} = blockdata;
+%                            listi = listi + 1;
+%                            tabapp.TextArea.Value = cell2mat(tablestate);
+                       end
 
                    elseif(strcmp(mode,'BP to BP'))
                        BP1 = mvapp.BP1EditField.Value;
-                       ri = double(BP1(1))-64;
-                       ci = str2double(BP1(2));
-                       BPi = sub2ind([9 9],ri,ci);
-                       tabXY1 = BP.XY(BPi,:);
-                       
-                       board(ri,ci) = 0;
+                       r1i = double(BP1(1))-64;
+                       c1i = str2double(BP1(2));
+                       BPi = sub2ind([9 9],r1i,c1i);
+                       tabXY1 = BP.XY(BPi,:);  
                        
                        BP2 = mvapp.BP2EditField.Value;
-                       ri = double(BP2(1))-64;
-                       ci = str2double(BP2(2));
-                       BPi = sub2ind([9 9],ri,ci);
+                       r2i = double(BP2(1))-64;
+                       c2i = str2double(BP2(2));
+                       BPi = sub2ind([9 9],r2i,c2i);
                        tabXY2 = BP.XY(BPi,:);
                        
-                       board(ri,ci) = 1;
-                       
-                       BPpickup(socket,tabXY1);
-                       BPdropoff(socket,tabXY2);
+                       if(board(r1i,c1i)==0)
+                           msg = sprintf('There is no block at %s',BP1);
+                           mvapp.StatusEditField_2.Value = msg;
+                           pause(2);
+                       elseif(board(r2i,c2i)==1)
+                           msg = sprintf('%s is already occupied!',BP2);
+                           mvapp.StatusEditField_2.Value = msg;
+                           pause(2);
+                       else                      
+                           msg = sprintf('Moving to %s to %s',BP1,BP2);
+                           mvapp.StatusEditField_2.Value = msg;
+                           board(r2i,c2i) = 1;
+                           board(r1i,c1i) = 0;
+                           BPpickup(socket,tabXY1);
+                           BPdropoff(socket,tabXY2);
+                           
+%                            %change block BPs
+%                            editBlocki = strfind(BP1,tablestate);
+%                            [editRow,~] = ind2sub(size(tablestate),editBlocki);
+%                            tablestate(editRow,:) = [];
+%                            blockdata = sprintf('%s  SHAPE   %3.1f	%3.1f	%3d',BP2, tabXY2,90);
+%                            tablestate = [tablestate; blockdata];
+%                            tabapp.TextArea.Value = tablestate;
+                       end
       
                    else % Rotate BP
                        targetBP = mvapp.BP1EditField.Value;
@@ -561,48 +595,63 @@ function Ass3GUI2RAPID()
                        ci = str2double(targetBP(2));
                        BPi = sub2ind([9 9],ri,ci);
                        tabXY = BP.XY(BPi,:);
-                       
-                       %move to BP                       
-                       BPpickup(socket,tabXY);
-                       fwrite(socket, 'JNTANGLE');
-                       str = ReceiveString(socket);
-                       jAng = str2num(str);
-                       
                        angle = str2double(mvapp.BP2EditField.Value);
-                       cmd = sprintf('SETPOSES %f,%f,%f,%f,%f,%f',jAng(1:5),angle);
-                       fwrite(socket,cmd);
-                       disp(cmd);
-                       pause(6);
                        
-                       cmd = sprintf('MVLINEAR %f,%f,14',tabXY);
-                       fwrite(socket,cmd);
-                       disp(cmd);
-                       
-                       blockreleased = 0;
-                       while(~blockreleased)
-                           fwrite(socket, 'INMOTION');
-                           str = ReceiveState(socket); 
-                           pause(0.2);
-                           if(strcmp(str,'FALSE'))
-                               cmd = 'SETSOLEN 0';
-                               fwrite(socket,cmd);
-                               disp(cmd);
-                               pause(0.1);
-                               
-                               cmd = 'VACUUMOF';
-                               fwrite(socket,cmd);
-                               disp(cmd);
-                               pause(0.1);
-                               blockreleased = 1;
-                           end
+                       if(board(ri,ci)==0)
+                           msg = sprintf('There is no block at %s',BP1);
+                           mvapp.StatusEditField_2.Value = msg;
+                           pause(2);
+                       else
+                           msg = sprintf('Rotating to %s by %d',targetBP,angle);
+                           mvapp.StatusEditField_2.Value = msg;
+                           
+                           %move to BP
+                           BPpickup(socket,tabXY);
+                           WaitForReady(socket);
+                           
+                           fwrite(socket, 'JNTANGLE');
+                           str = ReceiveString(socket);
+                           jAng = str2num(str);
+                           
+                           cmd = sprintf('SETPOSES %f,%f,%f,%f,%f,%f',jAng(1:5),angle);
+                           fwrite(socket,cmd);
+                           disp(cmd);
+                           WaitForReady(socket);
+                           
+                           cmd = sprintf('MVLINEAR %f,%f,14',tabXY);
+                           fwrite(socket,cmd);
+                           disp(cmd);
+                           WaitForReady(socket);
+                           
+                           cmd = 'SETSOLEN 0';
+                           fwrite(socket,cmd);
+                           disp(cmd);
+                           pause(0.1);
+                           
+                           cmd = 'VACUUMOF';
+                           fwrite(socket,cmd);
+                           disp(cmd);
+                           pause(0.1);
+                           
+                           cmd = 'MVPOSTAB 0,0,14';
+                           fwrite(socket,cmd);
+                           disp(cmd);
+                           WaitForReady(socket);
+                           
+%                            %change block BPs
+%                            editBlocki = strfind(BP1,tablestate);
+%                            [editRow,~] = ind2sub(size(tablestate),editBlocki);
+%                            tablestate(editRow,:) = [];
+%                            blockdata = sprintf('%s  SHAPE   %3.1f	%3.1f	%3d',targetBP, tabXY,angle);
+%                            tablestate = [tablestate; blockdata];
+%                            tabapp.TextArea.Value = tablestate;
                        end
-
-                       cmd = 'MVPOSTAB 0,0,14';
-                       fwrite(socket,cmd);
-                       disp(cmd);
                    end
                 end
-
+                
+                msg = 'Ready';
+                mvapp.StatusEditField_2.Value = msg;
+                mvapp.MOVEButton.Text = 'MOVE';
                 mvapp.MOVEButtonPressed = 0;
                 pause(0.1);
             end
@@ -625,8 +674,12 @@ function Ass3GUI2RAPID()
                         tabXY = emptyBP(i,:);
                         CONpickup(socket,conXY);       
                         BPdropoff(socket,tabXY); 
-                        pause(6);
                         deckW.state(i) = 1;
+                        
+                        if(mvapp.CANCELButtonPressed)
+                            mvapp.CANCELButtonPressed = 0;
+                            break;
+                        end
                     end
                     
                 % Player 2
@@ -639,7 +692,6 @@ function Ass3GUI2RAPID()
                         tabXY = emptyBP(i,:);
                         CONpickup(socket,conXY);       
                         BPdropoff(socket,tabXY); 
-                        pause(6);
                         deckE.state(i) = 1;
                     end
                 end
@@ -663,7 +715,6 @@ function Ass3GUI2RAPID()
                         tabXY = filledBP(i,:);
                         BPpickup(socket,tabXY);
                         CONdropoff(socket,conXY);
-                        pause(6);
                         deckW.state(i) = 0;
                     end
 
@@ -676,7 +727,6 @@ function Ass3GUI2RAPID()
                         tabXY = filledBP(i,:);
                         BPpickup(socket,tabXY);
                         CONdropoff(socket,conXY);
-                        pause(6);
                         deckE.state(i) = 0;
                      end
                 end
@@ -701,25 +751,24 @@ function Ass3GUI2RAPID()
                 
                 for i = 1:6
                     if(deckE.type(i)==1)
+                        %pick up incorrect block
                         tabXY = BP.deckE(i,:);
                         BPpickup(socket,tabXY);
-                        pause(6);
+                        %put block in temporary position
                         BPdropoff(socket,tempXY);
-                        pause(6);
                         deckE.type(i) = NaN; 
+                        %find correct block
                         letteri = find(deckW.type==0,1);
                         tabXY = BP.deckW(letteri,:);
                         BPpickup(socket,tabXY);
-                        pause(6);
                         tabXY = BP.deckE(i,:);
+                        %place correct block into deck
                         BPdropoff(socket,tabXY);
-                        pause(6);
-                        deckE.type(i) = 0; 
+                        deckE.type(i) = 0;
+                        %replace correct block in other deck
                         BPpickup(socket,tempXY);
-                        pause(6);
                         tabXY = BP.deckW(letteri,:);
                         BPdropoff(socket,tabXY);
-                        pause(6);
                         deckW.type(letteri) = 1; 
                     end
                 end
@@ -738,10 +787,8 @@ function Ass3GUI2RAPID()
                 for i = 1:size(scatteredBP,1)
                     tabXY = scatteredBP(i,:);
                     BPpickup(socket,tabXY);
-                    pause(6);
                     conXY = [0 0];
                     CONdropoff(socket,conXY);
-                    pause(6);
                 end
 
                 mvapp.CLEARButtonPressed = 0;
@@ -760,10 +807,8 @@ function Ass3GUI2RAPID()
                     freeBP = BP.XY(freeBPi,:);
                     tabXY = BP.deckE(i,:);
                     BPpickup(socket,tabXY);
-                    pause(6);
                     tabXY = freeBP;
                     BPdropoff(socket,tabXY);
-                    pause(6);
                     [ex,ey] = ind2sub([9 9],freeBPi);
                     board(ex,ey) = 1;
                     deckE.state(i) = 0;
@@ -775,10 +820,8 @@ function Ass3GUI2RAPID()
                     freeBP = BP.XY(freeBPi,:);
                     tabXY = BP.deckW(i,:);
                     BPpickup(socket,tabXY);
-                    pause(6);
                     tabXY = freeBP;
                     BPdropoff(socket,tabXY);
-                    pause(6);
                     [ex,ey] = ind2sub([9 9],freeBPi);
                     board(ex,ey) = 1;
                     deckW.state(i) = 0;
@@ -1855,7 +1898,7 @@ function BPpickup(socket,tabXY)
     cmd = sprintf('MVPOSTAB %f,%f,100',tabXY);
     fwrite(socket,cmd);
     disp(cmd);
-    pause(8);
+    WaitForReady(socket);
 
     % pick up block
     cmd = 'VACUUMON';
@@ -1867,64 +1910,56 @@ function BPpickup(socket,tabXY)
     disp(cmd);
     pause(0.1);
 
-    cmd = sprintf('MVPOSTAB %f,%f,13',tabXY);
+    cmd = sprintf('MVPOSTAB %f,%f,10',tabXY);
     disp(cmd);
     fwrite(socket,cmd);
-    pause(3);
+    WaitForReady(socket);
 
     %move to conveyor
     cmd = sprintf('MVPOSTAB %f,%f,100',tabXY);
     fwrite(socket,cmd);
     disp(cmd);
-    pause(3);
+    WaitForReady(socket);
 end
 
 function CONdropoff(socket,conXY)
-    cmd = sprintf('MVPOSCON %f,%f,100',conXY);
+    cmd = sprintf('MVPOSCON %f,%f,200',conXY);
     fwrite(socket,cmd);
     disp(cmd);
-    pause(8);
+    WaitForReady(socket);
 
-    cmd = sprintf('MVPOSCON %f,%f,14',conXY);
+    cmd = sprintf('MVPOSCON %f,%f,20',conXY);
     fwrite(socket,cmd);
     disp(cmd);
-    pause(3);
-
-    blockreleased = 0;
-    while(~blockreleased)
-       fwrite(socket, 'INMOTION');
-       str = ReceiveState(socket); 
-       pause(0.2);
-       if(strcmp(str,'FALSE'))
-           cmd = 'SETSOLEN 0';
-           fwrite(socket,cmd);
-           disp(cmd);
-           pause(0.1);
-
-           cmd = 'VACUUMOF';
-           fwrite(socket,cmd);
-           disp(cmd);
-           pause(0.1);
-           blockreleased = 1;
-       end
-    end
+    WaitForReady(socket);
+    
+    cmd = 'SETSOLEN 0';
+    fwrite(socket,cmd);
+    disp(cmd);
+    pause(0.1);
+    
+    cmd = 'VACUUMOF';
+    fwrite(socket,cmd);
+    disp(cmd);
+    pause(0.1);
 
     %move back to table 
     cmd = sprintf('MVPOSCON %f,%f,200',conXY);
     fwrite(socket,cmd);
     disp(cmd); 
-    pause(3);
+    WaitForReady(socket);
 
     cmd = 'MVPOSTAB 0,0,14';
     fwrite(socket,cmd);
     disp(cmd);
+    WaitForReady(socket);
 end
 
 function CONpickup(socket,conXY)
    cmd = sprintf('MVPOSCON %f,%f,200',conXY);
    disp(cmd);
    fwrite(socket,cmd);
-   pause(8);
+   WaitForReady(socket);
 
    % pick up block
    cmd = 'VACUUMON';
@@ -1934,52 +1969,56 @@ function CONpickup(socket,conXY)
    cmd = 'SETSOLEN 1';
    fwrite(socket,cmd);
    disp(cmd);
-   pause(0.2);
+   pause(0.1);
 
-   cmd = sprintf('MVPOSCON %f,%f,14',conXY);
+   cmd = sprintf('MVPOSCON %f,%f,10',conXY);
    disp(cmd);
    fwrite(socket,cmd);
-   pause(3);
+   WaitForReady(socket);
 
    cmd = sprintf('MVPOSCON %f,%f,200',conXY);
    disp(cmd);
    fwrite(socket,cmd);
-   pause(3);
+   WaitForReady(socket);
 end
 
 function BPdropoff(socket,tabXY)
    cmd = sprintf('MVPOSTAB %f,%f,100',tabXY);
    fwrite(socket,cmd);
    disp(cmd);
-   pause(8);
+   WaitForReady(socket);
    
-   cmd = sprintf('MVPOSTAB %f,%f,14',tabXY);
+   cmd = sprintf('MVPOSTAB %f,%f,20',tabXY);
    fwrite(socket,cmd);
    disp(cmd);
-   pause(3);
-   
-   blockreleased = 0;
-   while(~blockreleased)
-       fwrite(socket, 'INMOTION');
-       str = ReceiveState(socket); 
-       pause(0.2);
-       if(strcmp(str,'FALSE'))
-           
-           cmd = 'SETSOLEN 0';
-           fwrite(socket,cmd);
-           disp(cmd);
-           pause(0.1);
+   WaitForReady(socket);
 
-           cmd = 'VACUUMOF';
-           fwrite(socket,cmd);
-           disp(cmd);
-           pause(0.1);
-           blockreleased = 1;
-       end
-   end
+   cmd = 'SETSOLEN 0';
+   fwrite(socket,cmd);
+   disp(cmd);
+   pause(0.1);
+   
+   cmd = 'VACUUMOF';
+   fwrite(socket,cmd);
+   disp(cmd);
+   pause(0.1);
+
    cmd = 'MVPOSTAB 0,0,14';
    fwrite(socket,cmd);
    disp(cmd);
+   WaitForReady(socket);
+end
+
+function WaitForReady(socket)
+    movecomplete = 0;
+    while(~movecomplete)
+       pause(0.2);
+       fwrite(socket, 'INMOTION');
+       str = ReceiveState(socket); 
+       if(strcmp(str,'FALSE'))
+           movecomplete = 1;
+       end
+    end
 end
 
 function [str] =  ReceiveState(socket)
