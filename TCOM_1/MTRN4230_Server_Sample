@@ -151,7 +151,7 @@ MODULE MTRN4230_Server_Sample
             
         CASE "ROBRESME" : ! Resumes previous motion task
             StartMove;
-	    inMotion := TRUE;
+            inMotion:= TRUE;
             TPWrite "Robot Motion Resumed";
             
         CASE "ROBCANCL" : ! Cancels previous motion task
@@ -186,43 +186,43 @@ MODULE MTRN4230_Server_Sample
             SocketSend client_socket \Str:=ValToStr(DI10_1)+"\0A";
         
         CASE "GTVACRUN" : ! Send VacRun status
-            SocketSend client_socket \Str:=ValToStr(DO10_1)+"\0A";
+            SocketSend client_socket \Str:=ValToStr(DOutput(DO10_1))+"\0A";
         
         CASE "GTVACSOL" : ! Send VacSol status
-            SocketSend client_socket \Str:=ValToStr(DO10_2)+"\0A";
+            SocketSend client_socket \Str:=ValToStr(DOutput(DO10_2))+"\0A";
             
         CASE "GTCONRUN" : ! Send ConRun status
-            SocketSend client_socket \Str:=ValToStr(DO10_3)+"\0A";
+            SocketSend client_socket \Str:=ValToStr(DOutput(DO10_3))+"\0A";
             
         CASE "GTCONDIR" : ! Send ConDir status
-            SocketSend client_socket \Str:=ValToStr(DO10_4)+"\0A";
+            SocketSend client_socket \Str:=ValToStr(DOutput(DO10_4))+"\0A";
             
         CASE "GTMOTRON" : ! Send MOTOR_ON status - 0 = Motor on button being pressed
             SocketSend client_socket \Str:=ValToStr(DI_MOTOR_ON)+"\0A";
         
         CASE "GTESTOP1" : ! Send ESTOP status - 0 = ESTOP circuit triggered
-            SocketSend client_socket \Str:=ValToStr(DO_ESTOP)+"\0A";
+            SocketSend client_socket \Str:=ValToStr(DOutput(DO_ESTOP))+"\0A";
             
         CASE "GTESTOP2" : ! Send ESTOP2 status - 1 = System in emergency stop state
-            SocketSend client_socket \Str:=ValToStr(DO_ESTOP2)+"\0A";
+            SocketSend client_socket \Str:=ValToStr(DOutput(DO_ESTOP2))+"\0A";
             
         CASE "GTEXCERR" : ! Send EXEC_ERR status - 1 = Robot stopped due to program execution error
-            SocketSend client_socket \Str:=ValToStr(DO_EXEC_ERR)+"\0A";
+            SocketSend client_socket \Str:=ValToStr(DOutput(DO_EXEC_ERR))+"\0A";
             
         CASE "GTHDENBL" : ! Send HOLD_TO_ENABLE status - 1 = Robot movement enabled
-            SocketSend client_socket \Str:=ValToStr(DO_HOLD_TO_ENABLE)+"\0A";
+            SocketSend client_socket \Str:=ValToStr(DOutput(DO_HOLD_TO_ENABLE))+"\0A";
             
         CASE "GTLTCURT" : ! Send LIGHT_CURTAIN status - 0 = Light curtain is running
-            SocketSend client_socket \Str:=ValToStr(DO_LIGHT_CURTAIN)+"\0A";
+            SocketSend client_socket \Str:=ValToStr(DOutput(DO_LIGHT_CURTAIN))+"\0A";
             
         CASE "GTMOTSUP" : ! Send MOTION_SUP_TRIG status - 1 = Motion supervision triggered
-            SocketSend client_socket \Str:=ValToStr(DO_MOTION_SUP_TRIG)+"\0A";
+            SocketSend client_socket \Str:=ValToStr(DOutput(DO_MOTION_SUP_TRIG))+"\0A";
             
         CASE "GTMOTONS" : ! Send MOTOR_ON_STATE status - 1 = Controller is in motor on state
-            SocketSend client_socket \Str:=ValToStr(DO_MOTOR_ON_STATE)+"\0A";
+            SocketSend client_socket \Str:=ValToStr(DOutput(DO_MOTOR_ON_STATE))+"\0A";
             
         CASE "GTTROBRN" : ! Send TROB_RUNNING status - 1 = TROB task is running
-            SocketSend client_socket \Str:=ValToStr(DO_TROB_RUNNING)+"\0A";
+            SocketSend client_socket \Str:=ValToStr(DOutput(DO_TROB_RUNNING))+"\0A";
 
         DEFAULT : ! None
             
