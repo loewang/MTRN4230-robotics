@@ -1,5 +1,22 @@
 function PathTraverse(start,goal,obstacles)
 
+% Initialise for debug
+robot_IP_address = '127.0.0.1'; % Simulation ip address
+
+robot_port = 1025;
+
+socket = tcpip(robot_IP_address, robot_port);
+set(socket, 'ReadAsyncMode', 'continuous');
+
+if(~isequal(get(socket, 'Status'), 'open'))
+    fopen(socket);
+end
+
+if(~isequal(get(socket, 'Status'), 'open'))
+    warning(['Could not open TCP connection to ', robot_IP_address, ' on port ', robot_port]);
+    return;
+end
+
 % Examples
 
 % Easy
@@ -67,6 +84,7 @@ if path ~= 0
     while pathCounter <= row
         [x,y] = BP2Coord(path(pathCounter,:));
         command = sprintf('MVPOSTAB %f,%f,5',x,y);
+        disp(command);
         fwrite(socket, command);
         str = ReceiveString(socket);
         
@@ -77,6 +95,7 @@ if path ~= 0
         end
         
         pathCounter = pathCounter + 1;
+        pause(0.2);
     end
     
     % finish by moving above goal point
@@ -98,10 +117,14 @@ end
 
 
 
-function [x,y] = BP2Coord(bp)
-    % dummy for now
-    x = bp(1);
-    y = bp(2);
+function [x,y] = BP2Coord(bp)    
+    BPX = (18:36:(18 + (36*8)))';
+    %rows = repmat(BPX,9,1);
+    BPY = (-(36*4):36:(36*4));
+    %cols = repelem(BPY,9)';
+    
+    x = BPX(bp(1));
+    y = BPY(bp(2));
 end
 
 function [str] =  ReceiveString(socket)
