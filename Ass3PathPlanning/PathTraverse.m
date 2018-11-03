@@ -1,4 +1,4 @@
-function PathTraverse(start,goal,obstacles)
+function pathFound = PathTraverse(start,goal,obstacles)
 
 % Initialise for debug
 % robot_IP_address = '127.0.0.1'; % Simulation ip address
@@ -99,6 +99,7 @@ end
 
 if path ~= 0
     % path exists
+    pathFound = 1;
     
     % convert BP coordinate to coordinates rel. to TableHome
     [x,y] = BP2Coord(start);
@@ -157,6 +158,7 @@ if path ~= 0
 
 else
     % no path 
+    pathFound = 0;
 end
     % either reached goal or no path
 end
