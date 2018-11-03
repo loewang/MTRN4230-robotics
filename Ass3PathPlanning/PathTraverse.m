@@ -1,21 +1,21 @@
 function PathTraverse(start,goal,obstacles)
 
 % Initialise for debug
-robot_IP_address = '127.0.0.1'; % Simulation ip address
-
-robot_port = 1025;
-
-socket = tcpip(robot_IP_address, robot_port);
-set(socket, 'ReadAsyncMode', 'continuous');
-
-if(~isequal(get(socket, 'Status'), 'open'))
-    fopen(socket);
-end
-
-if(~isequal(get(socket, 'Status'), 'open'))
-    warning(['Could not open TCP connection to ', robot_IP_address, ' on port ', robot_port]);
-    return;
-end
+% robot_IP_address = '127.0.0.1'; % Simulation ip address
+% 
+% robot_port = 1025;
+% 
+% socket = tcpip(robot_IP_address, robot_port);
+% set(socket, 'ReadAsyncMode', 'continuous');
+% 
+% if(~isequal(get(socket, 'Status'), 'open'))
+%     fopen(socket);
+% end
+% 
+% if(~isequal(get(socket, 'Status'), 'open'))
+%     warning(['Could not open TCP connection to ', robot_IP_address, ' on port ', robot_port]);
+%     return;
+% end
 
 % Examples
 
@@ -29,15 +29,53 @@ start = [9 1];
 goal = [8 6];
 obstacles = [8 2; 8 3; 7 5; 7 6; 8 5; 9 5];
  
-% % Hard
-% start = [9 1];
-% goal = [8 6];
-% obstacles = [8 2; 8 3; 7 5; 7 6; 8 5; 9 5];
-% 
+% % Hard 1
+start = [9 1];
+goal = [8 6];
+obsMap = [zeros(1,9);
+             zeros(1,9);
+             1 1 1 0 0 1 0 0 0;
+             0 0 0 0 0 0 1 0 0;
+             0 1 0 1 1 0 0 1 0;
+             0 0 1 0 0 0 1 0 0;
+             0 0 0 0 1 1 0 0 0;
+             0 1 1 0 1 0 0 1 0
+             0 0 0 0 1 0 0 0 0];
+ 
+[obsX,obsY] = find(obsMap == 1);
+obstacles = [obsX obsY];
+
+% % Hard 2
+start = [9 1];
+goal = [8 6];
+obsMap = [zeros(1,9);
+             zeros(1,9);
+             1 1 1 0 0 1 0 0 0;
+             0 0 0 1 0 0 1 0 0;
+             0 1 0 1 1 0 0 1 0;
+             0 0 1 0 0 0 1 0 0;
+             0 0 0 0 1 1 0 0 0;
+             0 1 1 0 1 0 0 1 0
+             0 0 0 0 1 0 0 0 0];
+ 
+[obsX,obsY] = find(obsMap == 1);
+obstacles = [obsX obsY];
+
 % % No Path
 % start = [9 1];
 % goal = [8 6];
-% obstacles = [8 2; 8 3; 7 5; 7 6; 8 5; 9 5];
+% obsMap = [zeros(1,9);
+%              zeros(1,9);
+%              1 1 1 0 0 1 0 0 0;
+%              0 0 0 0 0 0 1 0 0;
+%              0 1 0 1 1 0 0 1 0;
+%              0 0 1 0 0 0 1 0 0;
+%              0 0 0 0 1 1 1 0 0;
+%              0 1 1 0 1 0 0 1 0
+%              0 0 0 0 1 0 1 0 0];
+%  
+% [obsX,obsY] = find(obsMap == 1);
+% obstacles = [obsX obsY];
 
 % just for visualising - comment out when not needed
 board = ones(9,9);
@@ -50,6 +88,14 @@ imagesc(board);
 
 % generate path 
 path = PathPlan(start, goal, obstacles);
+
+% visualisation of path
+if path ~= 0
+    for i = 1:length(path)-1
+        board(path(i,1), path(i,2)) = 5;
+    end
+    imagesc(board);
+end
 
 if path ~= 0
     % path exists
