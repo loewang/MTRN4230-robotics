@@ -249,8 +249,8 @@ MODULE MTRN4230_Server_Sample
         IF INTNO = errmessage THEN
             IF errmsg <> "" THEN
                 ! Display error message
-                SocketSend client_socket \Str:=(errmsg+ "\0A");
-                errmsg := ""; ! Clear error message after being displayed
+                !SocketSend client_socket \Str:=(errmsg+ "\0A");
+                !errmsg := ""; ! Clear error message after being displayed
             ENDIF
         ENDIF
     ENDTRAP
