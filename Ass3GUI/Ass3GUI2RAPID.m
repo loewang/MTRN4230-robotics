@@ -14,8 +14,10 @@ function Ass3GUI2RAPID()
     inmotion = 0;
     
     board = zeros(9,9);
-    deckE.state = zeros(6,1);
-    deckW.state = zeros(6,1);
+%     deckE.state = zeros(6,1);
+%     deckW.state = zeros(6,1);
+    deckE.state = ones(6,1);
+    deckW.state = ones(6,1);
     
     % BP coordinate system
     letters = {'A','B','C','D','E','F','G','H','I'}';
@@ -613,11 +615,13 @@ function Ass3GUI2RAPID()
                            cmd = sprintf('SETPOSES %f,%f,%f,%f,%f,%f',jAng(1:5),angle);
                            fwrite(socket,cmd);
                            disp(cmd);
+                           str = ReceiveState(socket);  
                            WaitForReady(socket);
                            
                            cmd = sprintf('MVLINEAR %f,%f,14',tabXY);
                            fwrite(socket,cmd);
                            disp(cmd);
+                           str = ReceiveState(socket);  
                            WaitForReady(socket);
                            
                            cmd = 'SETSOLEN 0';
@@ -633,6 +637,7 @@ function Ass3GUI2RAPID()
                            cmd = 'MVPOSTAB 0,0,14';
                            fwrite(socket,cmd);
                            disp(cmd);
+                           str = ReceiveState(socket);  
                            WaitForReady(socket);
                            
                            %change block BPs
@@ -916,7 +921,7 @@ function Ass3GUI2RAPID()
                 
                 [ri,ci]= ind2sub([9 9],find(board==1));
                 obstacles = [ri ci];
-
+                
                 pathStatus = PathTraverse(socket,start,goal,obstacles);
                 
                 if(pathStatus==0)
@@ -926,15 +931,242 @@ function Ass3GUI2RAPID()
                 mvapp.StatusEditField.Value = 'Ready';
                 mvapp.NAVIGATEButtonPressed = 0;
             end
-
+            
             %-----------------------------------------PVP TicTacToe pressed
             if(mvapp.PvPButtonPressed)
-
-                % Open TTT GUI
-                tttapp = TTTGUI();
-                pause(1);
+               
+                oi = sum(deckW.state);
+                xi = sum(deckE.state);
                 
-                
+                if(oi+xi==12)
+                    % Open TTT GUI
+                    tttapp = TTTGUI();
+                    pause(1);     
+                    c = zeros(1,9);
+                    
+                    while(tttapp.EndGameButtonVal == 0)
+                  
+                        % Once cell is pressed, calc the position on board (CP)
+                        % The robot will pick up either a Letter or Shape block
+                        % depending on the player turn, and release it on the Cell
+                        % Point (CP).
+                        
+                        % Cell 1 Pressed - D4
+                        if(tttapp.CellOneVal == 1 && c(1) == 0)
+                            
+                            % Now we need to see which player turn it is.
+                            % Player 1 is 'O' (Shapes) and 2 is 'X'(Letters)
+                            if (tttapp.Cell1Button.Text == tttapp.Player1)
+                                
+                                % Player 1 deck is located WESTERN side of table
+                                % Move to first block pos (Western Side for Player 1)
+                                oi = find(deckW.state==1,1);
+                                tabXY = BP.deckW(oi,:);
+                                BPpickup(socket,tabXY);
+                                deckW.state(oi) = 0;
+                                
+                                % Now move the block into Cell 1 Position
+                                ti = sub2ind([3 3],3,3); % Cell 1
+                                tabXY = BP.TTT(ti,:);
+                                BPdropoff(socket,tabXY);
+                            else
+                                xi = find(deckE.state==1,1);
+                                tabXY = BP.deckE(xi,:);
+                                BPpickup(socket,tabXY);
+                                deckE.state(xi) = 0;
+                                
+                                % Now move the block into Cell 1 Position
+                                ti = sub2ind([3 3],3,3); % Cell 1
+                                tabXY = BP.TTT(ti,:);
+                                BPdropoff(socket,tabXY);
+                            end
+                            c(1) = 1;
+                        end
+                        
+                        % Cell 2 Pressed - D5
+                        if(tttapp.CellTwoVal == 1 && c(2) == 0)
+                            if (tttapp.Cell2Button.Text == tttapp.Player1)
+                                oi = find(deckW.state==1,1);
+                                tabXY = BP.deckW(oi,:);
+                                BPpickup(socket,tabXY);
+                                deckW.state(oi) = 0;
+                                ti = sub2ind([3 3],3,2); % Cell 2
+                                tabXY = BP.TTT(ti,:);
+                                BPdropoff(socket,tabXY);
+                            else
+                                xi = find(deckE.state==1,1);
+                                tabXY = BP.deckE(xi,:);
+                                BPpickup(socket,tabXY);
+                                deckE.state(xi) = 0;
+                                ti = sub2ind([3 3],3,2); % Cell 2
+                                tabXY = BP.TTT(ti,:);
+                                BPdropoff(socket,tabXY);
+                            end
+                            c(2) = 1;
+                        end
+                        
+                        % Cell 3 Pressed - D6
+                        if(tttapp.CellThreeVal == 1 && c(3) == 0)
+                            if (tttapp.Cell3Button.Text == tttapp.Player1)
+                                oi = find(deckW.state==1,1);
+                                tabXY = BP.deckW(oi,:);
+                                BPpickup(socket,tabXY);
+                                deckW.state(oi) = 0;
+                                ti = sub2ind([3 3],3,1); % Cell 3
+                                tabXY = BP.TTT(ti,:);
+                                BPdropoff(socket,tabXY);
+                            else
+                                xi = find(deckE.state==1,1);
+                                tabXY = BP.deckE(xi,:);
+                                BPpickup(socket,tabXY);
+                                deckE.state(xi) = 0;
+                                ti = sub2ind([3 3],3,1); % Cell 3
+                                tabXY = BP.TTT(ti,:);
+                                BPdropoff(socket,tabXY);
+                            end
+                            c(3) = 1;
+                        end
+                        
+                        % Cell 4 Pressed - E4
+                        if(tttapp.CellFourVal == 1 && c(4) == 0)
+                            if (tttapp.Cell4Button.Text == tttapp.Player1)
+                                oi = find(deckW.state==1,1);
+                                tabXY = BP.deckW(oi,:);
+                                BPpickup(socket,tabXY);
+                                deckW.state(oi) = 0;
+                                ti = sub2ind([3 3],2,3); % Cell 4
+                                tabXY = BP.TTT(ti,:);
+                                BPdropoff(socket,tabXY);
+                            else
+                                xi = find(deckE.state==1,1);
+                                tabXY = BP.deckE(xi,:);
+                                BPpickup(socket,tabXY);
+                                deckE.state(xi) = 0;
+                                ti = sub2ind([3 3],2,3); % Cell 4
+                                tabXY = BP.TTT(ti,:);
+                                BPdropoff(socket,tabXY);
+                            end
+                            c(4) = 1;
+                        end
+                        
+                        % Cell 5 Pressed - E5
+                        if(tttapp.CellFiveVal == 1 && c(5) == 0)
+                            if (tttapp.Cell1Button.Text == tttapp.Player1)
+                                oi = find(deckW.state==1,1);
+                                tabXY = BP.deckW(oi,:);
+                                BPpickup(socket,tabXY);
+                                deckW.state(oi) = 0;
+                                ti = sub2ind([3 3],2,2); % Cell 5
+                                tabXY = BP.TTT(ti,:);
+                                BPdropoff(socket,tabXY);
+                            else
+                                xi = find(deckE.state==1,1);
+                                tabXY = BP.deckE(xi,:);
+                                BPpickup(socket,tabXY);
+                                deckE.state(xi) = 0;
+                                ti = sub2ind([3 3],2,2); % Cell 5
+                                tabXY = BP.TTT(ti,:);
+                                BPdropoff(socket,tabXY);
+                            end
+                            c(5) = 1;
+                        end
+                        
+                        % Cell 6 Pressed - E6
+                        if(tttapp.CellSixVal == 1 && c(6) == 0)
+                            if (tttapp.Cell6Button.Text == tttapp.Player1)
+                                oi = find(deckW.state==1,1);
+                                tabXY = BP.deckW(oi,:);
+                                BPpickup(socket,tabXY);
+                                deckW.state(oi) = 0;
+                                ti = sub2ind([3 3],2,1); % Cell 6
+                                tabXY = BP.TTT(ti,:);
+                                BPdropoff(socket,tabXY);
+                            else
+                                xi = find(deckE.state==1,1);
+                                tabXY = BP.deckE(xi,:);
+                                BPpickup(socket,tabXY);
+                                deckE.state(xi) = 0;
+                                ti = sub2ind([3 3],2,1); % Cell 6
+                                tabXY = BP.TTT(ti,:);
+                                BPdropoff(socket,tabXY);
+                            end
+                            c(6) = 1;
+                        end
+                        
+                        % Cell 7 Pressed - F4
+                        if(tttapp.CellSevenVal == 1 && c(7) == 0)
+                            if (tttapp.Cell7Button.Text == tttapp.Player1)
+                                oi = find(deckW.state==1,1);
+                                tabXY = BP.deckW(oi,:);
+                                BPpickup(socket,tabXY);
+                                deckW.state(oi) = 0;
+                                ti = sub2ind([3 3],1,3); % Cell 7
+                                tabXY = BP.TTT(ti,:);
+                                BPdropoff(socket,tabXY);
+                            else
+                                xi = find(deckE.state==1,1);
+                                tabXY = BP.deckE(xi,:);
+                                BPpickup(socket,tabXY);
+                                deckE.state(xi) = 0;
+                                ti = sub2ind([3 3],1,3); % Cell 7
+                                tabXY = BP.TTT(ti,:);
+                                BPdropoff(socket,tabXY);
+                            end
+                            c(7) = 1;
+                        end
+                        
+                        % Cell 8 Pressed - F5
+                        if(tttapp.CellEightVal == 1 && c(8) == 0)
+                            if (tttapp.Cell8Button.Text == tttapp.Player1)
+                                oi = find(deckW.state==1,1);
+                                tabXY = BP.deckW(oi,:);
+                                BPpickup(socket,tabXY);
+                                deckW.state(oi) = 0;
+                                ti = sub2ind([3 3],1,2); % Cell 8
+                                tabXY = BP.TTT(ti,:);
+                                BPdropoff(socket,tabXY);
+                            else
+                                xi = find(deckE.state==1,1);
+                                tabXY = BP.deckE(xi,:);
+                                BPpickup(socket,tabXY);
+                                deckE.state(xi) = 0;
+                                ti = sub2ind([3 3],1,2); % Cell 8
+                                tabXY = BP.TTT(ti,:);
+                                BPdropoff(socket,tabXY);
+                            end
+                            c(8) = 1;
+                        end
+                        
+                        % Cell 9 Pressed - F6
+                        if(tttapp.CellNineVal == 1 && c(9) == 0)
+                            if (tttapp.Cell9Button.Text == tttapp.Player1)
+                                oi = find(deckW.state==1,1);
+                                tabXY = BP.deckW(oi,:);
+                                BPpickup(socket,tabXY);
+                                deckW.state(oi) = 0;
+                                ti = sub2ind([3 3],1,1); % Cell 9
+                                tabXY = BP.TTT(ti,:);
+                                BPdropoff(socket,tabXY);
+                            else
+                                xi = find(deckE.state==1,1);
+                                tabXY = BP.deckE(xi,:);
+                                BPpickup(socket,tabXY);
+                                deckE.state(xi) = 0;
+                                ti = sub2ind([3 3],1,1); % Cell 9
+                                tabXY = BP.TTT(ti,:);
+                                BPdropoff(socket,tabXY);
+                            end
+                            c(9) = 1;
+                        end
+                        pause(1);
+                    end
+                    
+                    tttapp.EndGameButtonVal = 0;
+                    tttapp.delete;
+                else
+                   disp("Decks aren't full"); 
+                end
+                mvapp.PvPButtonPressed = 0;
             end
             
             if(mvapp.AIvPButtonPressed)
@@ -944,8 +1176,8 @@ function Ass3GUI2RAPID()
             end
             
             pause(0.01);
+            % Fall out if no longer connected
         end
-        % Fall out if no longer connected
         
         if(app.ReconnectButton_Pressed)
             try
@@ -987,6 +1219,7 @@ function BPpickup(socket,tabXY)
     cmd = sprintf('MVPOSTAB %f,%f,100',tabXY);
     fwrite(socket,cmd);
     disp(cmd);
+    str = ReceiveState(socket);  
     WaitForReady(socket);
 
     % pick up block
@@ -1002,12 +1235,14 @@ function BPpickup(socket,tabXY)
     cmd = sprintf('MVPOSTAB %f,%f,10',tabXY);
     disp(cmd);
     fwrite(socket,cmd);
+    str = ReceiveState(socket);  
     WaitForReady(socket);
 
     %move to conveyor
     cmd = sprintf('MVPOSTAB %f,%f,100',tabXY);
     fwrite(socket,cmd);
     disp(cmd);
+    str = ReceiveState(socket);  
     WaitForReady(socket);
 end
 
@@ -1015,11 +1250,13 @@ function CONdropoff(socket,conXY)
     cmd = sprintf('MVPOSCON %f,%f,200',conXY);
     fwrite(socket,cmd);
     disp(cmd);
+    str = ReceiveState(socket);  
     WaitForReady(socket);
 
     cmd = sprintf('MVPOSCON %f,%f,20',conXY);
     fwrite(socket,cmd);
     disp(cmd);
+    str = ReceiveState(socket);  
     WaitForReady(socket);
     
     cmd = 'SETSOLEN 0';
@@ -1036,11 +1273,13 @@ function CONdropoff(socket,conXY)
     cmd = sprintf('MVPOSCON %f,%f,200',conXY);
     fwrite(socket,cmd);
     disp(cmd); 
+    str = ReceiveState(socket);  
     WaitForReady(socket);
 
     cmd = 'MVPOSTAB 0,0,14';
     fwrite(socket,cmd);
     disp(cmd);
+    str = ReceiveState(socket);  
     WaitForReady(socket);
 end
 
@@ -1048,6 +1287,7 @@ function CONpickup(socket,conXY)
    cmd = sprintf('MVPOSCON %f,%f,200',conXY);
    disp(cmd);
    fwrite(socket,cmd);
+   str = ReceiveState(socket);  
    WaitForReady(socket);
 
    % pick up block
@@ -1063,11 +1303,13 @@ function CONpickup(socket,conXY)
    cmd = sprintf('MVPOSCON %f,%f,10',conXY);
    disp(cmd);
    fwrite(socket,cmd);
+   str = ReceiveState(socket);  
    WaitForReady(socket);
 
    cmd = sprintf('MVPOSCON %f,%f,200',conXY);
    disp(cmd);
    fwrite(socket,cmd);
+   str = ReceiveState(socket);  
    WaitForReady(socket);
 end
 
@@ -1075,11 +1317,13 @@ function BPdropoff(socket,tabXY)
    cmd = sprintf('MVPOSTAB %f,%f,100',tabXY);
    fwrite(socket,cmd);
    disp(cmd);
+   str = ReceiveState(socket);  
    WaitForReady(socket);
    
    cmd = sprintf('MVPOSTAB %f,%f,20',tabXY);
    fwrite(socket,cmd);
    disp(cmd);
+   str = ReceiveState(socket);  
    WaitForReady(socket);
 
    cmd = 'SETSOLEN 0';
@@ -1095,11 +1339,13 @@ function BPdropoff(socket,tabXY)
    cmd = sprintf('MVPOSTAB %f,%f,100',tabXY);
    fwrite(socket,cmd);
    disp(cmd);
+   str = ReceiveState(socket);  
    WaitForReady(socket);
 
    cmd = 'MVPOSTAB 0,0,14';
    fwrite(socket,cmd);
    disp(cmd);
+   str = ReceiveState(socket);  
    WaitForReady(socket);
 end
 
@@ -1171,10 +1417,12 @@ function MovetoHomePositionButtonCommand(app,socket)
     if(app.MovetoHomePositionButton.Value == 1)
         fwrite(socket,'SETPOSES -90,0,0,0,0,0');
         disp('SETPOSES -90,0,0,0,0,0');
+        str = ReceiveState(socket);  
         pause(0.01);
     else
         fwrite(socket,'SETPOSES -90,0,0,0,0,0');
         disp('SETPOSES -90,0,0,0,0,0');
+        str = ReceiveState(socket);  
         pause(0.01);
     end
 end
