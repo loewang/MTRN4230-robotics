@@ -37,6 +37,8 @@ MODULE MTRN4230_Move_Sample
             Initialise;
         ENDIF
         
+        MoveJSample;
+        
         ReceiveCommandLoop; ! Main Loop
 
     ENDPROC
