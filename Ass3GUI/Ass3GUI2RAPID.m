@@ -969,6 +969,7 @@ function Ass3GUI2RAPID()
                                 ti = sub2ind([3 3],3,3); % Cell 1
                                 tabXY = BP.TTT(ti,:);
                                 BPdropoff(socket,tabXY);
+                                board(6,6) = 1;
                             else
                                 xi = find(deckE.state==1,1);
                                 tabXY = BP.deckE(xi,:);
@@ -979,6 +980,7 @@ function Ass3GUI2RAPID()
                                 ti = sub2ind([3 3],3,3); % Cell 1
                                 tabXY = BP.TTT(ti,:);
                                 BPdropoff(socket,tabXY);
+                                board(6,6) = 1;
                             end
                             c(1) = 1;
                         end
@@ -993,6 +995,7 @@ function Ass3GUI2RAPID()
                                 ti = sub2ind([3 3],3,2); % Cell 2
                                 tabXY = BP.TTT(ti,:);
                                 BPdropoff(socket,tabXY);
+                                board(6,5) = 1;
                             else
                                 xi = find(deckE.state==1,1);
                                 tabXY = BP.deckE(xi,:);
@@ -1001,6 +1004,7 @@ function Ass3GUI2RAPID()
                                 ti = sub2ind([3 3],3,2); % Cell 2
                                 tabXY = BP.TTT(ti,:);
                                 BPdropoff(socket,tabXY);
+                                board(6,5) = 1;
                             end
                             c(2) = 1;
                         end
@@ -1015,6 +1019,7 @@ function Ass3GUI2RAPID()
                                 ti = sub2ind([3 3],3,1); % Cell 3
                                 tabXY = BP.TTT(ti,:);
                                 BPdropoff(socket,tabXY);
+                                board(6,4) = 1;
                             else
                                 xi = find(deckE.state==1,1);
                                 tabXY = BP.deckE(xi,:);
@@ -1023,6 +1028,7 @@ function Ass3GUI2RAPID()
                                 ti = sub2ind([3 3],3,1); % Cell 3
                                 tabXY = BP.TTT(ti,:);
                                 BPdropoff(socket,tabXY);
+                                board(6,4) = 1;
                             end
                             c(3) = 1;
                         end
@@ -1037,6 +1043,7 @@ function Ass3GUI2RAPID()
                                 ti = sub2ind([3 3],2,3); % Cell 4
                                 tabXY = BP.TTT(ti,:);
                                 BPdropoff(socket,tabXY);
+                                board(5,6) = 1;
                             else
                                 xi = find(deckE.state==1,1);
                                 tabXY = BP.deckE(xi,:);
@@ -1045,6 +1052,7 @@ function Ass3GUI2RAPID()
                                 ti = sub2ind([3 3],2,3); % Cell 4
                                 tabXY = BP.TTT(ti,:);
                                 BPdropoff(socket,tabXY);
+                                board(5,6) = 1;
                             end
                             c(4) = 1;
                         end
@@ -1059,6 +1067,7 @@ function Ass3GUI2RAPID()
                                 ti = sub2ind([3 3],2,2); % Cell 5
                                 tabXY = BP.TTT(ti,:);
                                 BPdropoff(socket,tabXY);
+                                board(5,5) = 1;
                             else
                                 xi = find(deckE.state==1,1);
                                 tabXY = BP.deckE(xi,:);
@@ -1067,6 +1076,7 @@ function Ass3GUI2RAPID()
                                 ti = sub2ind([3 3],2,2); % Cell 5
                                 tabXY = BP.TTT(ti,:);
                                 BPdropoff(socket,tabXY);
+                                board(5,5) = 1;
                             end
                             c(5) = 1;
                         end
@@ -1081,6 +1091,7 @@ function Ass3GUI2RAPID()
                                 ti = sub2ind([3 3],2,1); % Cell 6
                                 tabXY = BP.TTT(ti,:);
                                 BPdropoff(socket,tabXY);
+                                board(5,4) = 1;
                             else
                                 xi = find(deckE.state==1,1);
                                 tabXY = BP.deckE(xi,:);
@@ -1089,6 +1100,7 @@ function Ass3GUI2RAPID()
                                 ti = sub2ind([3 3],2,1); % Cell 6
                                 tabXY = BP.TTT(ti,:);
                                 BPdropoff(socket,tabXY);
+                                board(5,4) = 1;
                             end
                             c(6) = 1;
                         end
@@ -1103,6 +1115,7 @@ function Ass3GUI2RAPID()
                                 ti = sub2ind([3 3],1,3); % Cell 7
                                 tabXY = BP.TTT(ti,:);
                                 BPdropoff(socket,tabXY);
+                                board(4,6) = 1;
                             else
                                 xi = find(deckE.state==1,1);
                                 tabXY = BP.deckE(xi,:);
@@ -1111,6 +1124,7 @@ function Ass3GUI2RAPID()
                                 ti = sub2ind([3 3],1,3); % Cell 7
                                 tabXY = BP.TTT(ti,:);
                                 BPdropoff(socket,tabXY);
+                                board(4,6) = 1;
                             end
                             c(7) = 1;
                         end
@@ -1125,6 +1139,7 @@ function Ass3GUI2RAPID()
                                 ti = sub2ind([3 3],1,2); % Cell 8
                                 tabXY = BP.TTT(ti,:);
                                 BPdropoff(socket,tabXY);
+                                board(4,5) = 1;
                             else
                                 xi = find(deckE.state==1,1);
                                 tabXY = BP.deckE(xi,:);
@@ -1133,6 +1148,7 @@ function Ass3GUI2RAPID()
                                 ti = sub2ind([3 3],1,2); % Cell 8
                                 tabXY = BP.TTT(ti,:);
                                 BPdropoff(socket,tabXY);
+                                board(4,5) = 1;
                             end
                             c(8) = 1;
                         end
@@ -1147,6 +1163,7 @@ function Ass3GUI2RAPID()
                                 ti = sub2ind([3 3],1,1); % Cell 9
                                 tabXY = BP.TTT(ti,:);
                                 BPdropoff(socket,tabXY);
+                                board(4,4) = 1;
                             else
                                 xi = find(deckE.state==1,1);
                                 tabXY = BP.deckE(xi,:);
@@ -1155,6 +1172,7 @@ function Ass3GUI2RAPID()
                                 ti = sub2ind([3 3],1,1); % Cell 9
                                 tabXY = BP.TTT(ti,:);
                                 BPdropoff(socket,tabXY);
+                                board(4,4) = 1;
                             end
                             c(9) = 1;
                         end
@@ -1163,6 +1181,14 @@ function Ass3GUI2RAPID()
                     
                     tttapp.EndGameButtonVal = 0;
                     tttapp.delete;
+                    
+                    %------------------------------ Pack up
+                    while(~isempty(board))
+                        packBPi = find(board == 1,1);
+                        packBP = BP.XY(packBPi,:);
+                    end
+                    
+                    
                 else
                    disp("Decks aren't full"); 
                 end
