@@ -1555,6 +1555,11 @@ function Ass3GUI2RAPID()
                         corners = [1 3 7 9];
                         lastCorner = corners(ismember(corners,emptySpots) == 1);
                         bestMove = lastCorner;
+                        
+                        %%%%
+                        %%%% convert 'lastCorner' number to cell spot
+                        %%%%
+                            
                         return;
 
                     end    
