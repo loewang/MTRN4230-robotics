@@ -1274,7 +1274,10 @@ function Ass3GUI2RAPID()
             
             % AI Code -------------------------------------------
             if(mvapp.AIvPButtonPressed)
-                tttapp = TTTGUI();              
+                tttapp = TTTGUI();
+                
+                % set a board state here before loop --------
+                
                 while(tttapp.EndGameButtonPressed == 0)
                     
                     bestMove = TTTAI(boardState);
@@ -1391,6 +1394,9 @@ function Ass3GUI2RAPID()
                     tabXY = BP.TTT(ti,:);
                     TTTdropoff(socket,tabXY,tttapp);
                     block.type(4,6) = 1; % need to use ind2sub
+                    
+                    %update board here ------------
+                    
                 end 
                 
                 tttapp.EndGameButtonPressed = 0;
