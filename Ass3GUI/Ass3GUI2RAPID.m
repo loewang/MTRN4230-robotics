@@ -1270,6 +1270,15 @@ function Ass3GUI2RAPID()
                             tabXY = BP.deckW(freeoi,:);
                             BPdropoff(socket,tabXY);
                             deckW.state(freeoi) = 1;
+                            
+                            %remove block from list
+                            BPi = sub2ind([9 9],(4-r)+3,(4-c)+3);
+                            editRow = find(tablestate(:,1)==BPi,1);
+                            tablestate(editRow,:) = [];
+                            if(listi ~= 1)
+                                listi = listi - 1;
+                            end
+                            tabapp.UITable.Data = tablestate;
                         end
                     end
                     
@@ -1289,6 +1298,15 @@ function Ass3GUI2RAPID()
                             tabXY = BP.deckE(freexi,:);
                             BPdropoff(socket,tabXY);
                             deckE.state(freexi) = 1;
+                            
+                            %remove block from list
+                            BPi = sub2ind([9 9],(4-r)+3,(4-c)+3);
+                            editRow = find(tablestate(:,1)==BPi,1);
+                            tablestate(editRow,:) = [];
+                            if(listi ~= 1)
+                                listi = listi - 1;
+                            end
+                            tabapp.UITable.Data = tablestate;
                         end
                     end
                     
@@ -1462,7 +1480,10 @@ function Ass3GUI2RAPID()
                         board((4-ri)+3,(4-ci)+3) = 1;
                         turn = 1;
                         
-                        %update board here ------------
+                        BPi  = sub2ind([9 9],(4-ri)+3,(4-ci)+3) ;
+                        tablestate(listi,:) = [BPi 0 tabXY 90];
+                        listi = listi + 1;
+                        tabapp.UITable.Data = tablestate;
                     
                     else
                         
@@ -1716,6 +1737,15 @@ function Ass3GUI2RAPID()
                         tabXY = BP.deckW(freeoi,:);
                         BPdropoff(socket,tabXY);
                         deckW.state(freeoi) = 1;
+                        
+                        %remove block from list
+                        BPi = sub2ind([9 9],(4-r)+3,(4-c)+3);
+                        editRow = find(tablestate(:,1)==BPi,1);
+                        tablestate(editRow,:) = [];
+                        if(listi ~= 1)
+                            listi = listi - 1;
+                        end
+                        tabapp.UITable.Data = tablestate;
                     end
                 end
                 
@@ -1735,6 +1765,15 @@ function Ass3GUI2RAPID()
                         tabXY = BP.deckE(freexi,:);
                         BPdropoff(socket,tabXY);
                         deckE.state(freexi) = 1;
+                        
+                        %remove block from list
+                        BPi = sub2ind([9 9],(4-r)+3,(4-c)+3);
+                        editRow = find(tablestate(:,1)==BPi,1);
+                        tablestate(editRow,:) = [];
+                        if(listi ~= 1)
+                            listi = listi - 1;
+                        end
+                        tabapp.UITable.Data = tablestate;
                     end
                 end
                 tttapp.delete;
