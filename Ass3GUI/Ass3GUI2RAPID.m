@@ -14,11 +14,9 @@ function Ass3GUI2RAPID()
     inmotion = 0;
     
     board = zeros(9,9);
-%     deckE.state = zeros(6,1);
-%     deckW.state = zeros(6,1);
-    deckE.state = ones(6,1);
-    deckW.state = ones(6,1);
-    
+    deckE.state = zeros(6,1);
+    deckW.state = zeros(6,1);
+
     % BP coordinate system
     letters = {'A','B','C','D','E','F','G','H','I'}';
     rows = repmat(letters,1,9);
@@ -828,7 +826,7 @@ function Ass3GUI2RAPID()
                         
                         %update block BPs
                         editRow = find(tablestate(:,1)==letteri+100,1);
-                        tablestate(editRow,:) = [i+100 0 BP.deckW(letteri,:) 90];
+                        tablestate(editRow,:) = [letteri+100 0 BP.deckW(letteri,:) 90];
                         tabapp.UITable.Data = tablestate;
                         
                         if(mvapp.CANCELButtonPressed)
@@ -926,9 +924,19 @@ function Ass3GUI2RAPID()
             
             %correct detected blocks--------------------------------------
             
-            if(tabapp.TableUpdated)
-                
-                tabapp.TableUpdated = 0;
+            if(tabapp.EDITButtonPressed)
+                if(strcmp(tabapp.EDITButton.Text,'EDIT'))
+                    tablestate = tabapp.UITable.Data;
+                    
+                    board = zeros(9,9);
+                    board(tablestate(:,1)) = 1;
+                    
+                    block.type(tablestate(:,1)) = tablestate(:,2);
+                    
+                    block.theta(tablestate(:,1)) = tablestate(:,5);
+                    
+                end
+                tabapp.EDITButtonPressed = 0;
             end
             
             %Path Planning-------------------------------------------------
@@ -2124,151 +2132,3 @@ function MovetoHomePositionButtonCommand(app,socket)
         pause(0.01);
     end
 end
-
-% % DIO
-% fwrite(socket, 'VACUUMON');
-% pause(0.5);
-% fwrite(socket, 'SETSOLEN 1');
-% pause(2);
-% fwrite(socket, 'SETSOLEN 0');
-% pause(0.5);
-% fwrite(socket, 'VACUUMOF');
-% pause(0.5);
-% fwrite(socket, 'CONVEYON');
-% pause(2);
-% fwrite(socket, 'CONVEYOF');
-% pause(0.5);
-% fwrite(socket, 'CONVDIRE 1');
-% pause(0.5);
-% fwrite(socket, 'CONVEYON');
-% pause(2);
-% fwrite(socket, 'CONVEYOF');
-% 
-% % Motion
-% fwrite(socket, 'MVPOSTAB 100,100,100');
-% pause(2);
-% 
-% fwrite(socket, 'JNTANGLE');
-% str = ReceiveString(socket);
-% 
-% fwrite(socket, 'EEPOSITN');
-% str = ReceiveString(socket);
-% 
-% fwrite(socket, 'EEORIENT');
-% str = ReceiveString(socket);
-% 
-% fwrite(socket, 'SETSPEED v500');
-% pause(0.5);
-% 
-% fwrite(socket, 'MVPOSCON 100,100,100');
-% pause(2);
-% 
-% fwrite(socket, 'JNTANGLE');
-% str = ReceiveString(socket);
-% 
-% fwrite(socket, 'EEPOSITN');
-% str = ReceiveString(socket);
-% 
-% fwrite(socket, 'EEORIENT');
-% str = ReceiveString(socket);
-% 
-% fwrite(socket, 'SETPOSES 10,10,10,10,10,10');
-% pause(5);
-% 
-% fwrite(socket, 'SETSPEED v100');
-% pause(0.5);
-% 
-% i = 0;
-% while i < 10
-%     fwrite(socket, 'LINMDEND X,neg');
-%     pause(0.1);
-%     i = i + 1;
-% end
-% 
-% i = 0;
-% while i < 10
-%     fwrite(socket, 'LINMDEND Y,neg');
-%     i = i + 1;
-% end
-% 
-% i = 0;
-% while i < 10
-% 	fwrite(socket, 'LINMDEND Z,neg');
-%     pause(0.1);
-%     i = i + 1;
-% end
-%     pause(0.1);
-% 
-% fwrite(socket, 'EEORIENT 0,0,1,0');
-% pause(1);
-% 
-% fwrite(socket, 'SETSPEED v10');
-% 
-% i = 0;
-% while i < 20
-% 	fwrite(socket, 'LINMDBAS X,neg');
-%     pause(0.1);
-%     i = i + 1;
-% end
-% 
-% i = 0;
-% while i < 20
-% 	fwrite(socket, 'LINMDBAS Y,neg');
-%     pause(0.1);
-%     i = i + 1;
-% end
-% 
-% i = 0;
-% while i < 20
-% 	fwrite(socket, 'LINMDBAS Z,neg');
-%     pause(0.1);
-%     i = i + 1;
-% end
-% 
-% i = 0;
-% while i < 20
-% 	fwrite(socket, 'JOGJOINT 1,pos');
-%     pause(0.1);
-%     i = i + 1;
-% end
-% 
-% i = 0;
-% while i < 20
-% 	fwrite(socket, 'JOGJOINT 2,neg');
-%     pause(0.1);
-%     i = i + 1;
-% end
-% 
-% i = 0;
-% while i < 20
-% 	fwrite(socket, 'JOGJOINT 3,pos');
-%     pause(0.1);
-%     i = i + 1;
-% end
-% 
-% i = 0;
-% while i < 20
-% 	fwrite(socket, 'JOGJOINT 4,neg');
-%     pause(0.1);
-%     i = i + 1;
-% end
-% 
-% i = 0;
-% while i < 20
-% 	fwrite(socket, 'JOGJOINT 5,pos');
-%     pause(0.1);
-%     i = i + 1;
-% end
-% 
-% i = 0;
-% while i < 20
-% 	fwrite(socket, 'JOGJOINT 6,neg');
-%     pause(0.1);
-%     i = i + 1;
-% end
-% 
-% function [str] =  ReceiveString(socket)
-%     data = fgetl(socket);
-%     str = strcat(char(data),'\n');
-%     %fprintf(str);
-% end
