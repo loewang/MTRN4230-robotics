@@ -41,7 +41,7 @@ function Ass3GUI2RAPID()
     BP.deckE = [dX dEY];
     
     % TTT XY positions
-    ti = sub2ind([9 9],[4 5 6 4 5 6 4 5 6],[4 4 4 5 5 5 6 6 6]); %D4
+    ti = sub2ind([9 9],[6 6 6 5 5 5 4 4 4],[6 5 4 6 5 4 6 5 4]); %D4
     BP.TTT = BP.XY(ti,:);
     
     % detected blocks buffer
@@ -991,7 +991,7 @@ function Ass3GUI2RAPID()
                                 deckW.state(oi) = 0;
                                 
                                 % Now move the block into Cell 1 Position
-                                ti = sub2ind([3 3],3,3); % Cell 1
+                                ti = 1; % Cell 1
                                 tabXY = BP.TTT(ti,:);
                                 TTTdropoff(socket,tabXY,tttapp);
                                 block.type(6,6) = 0;
@@ -1002,7 +1002,7 @@ function Ass3GUI2RAPID()
                                 deckE.state(xi) = 0;
                                 
                                 % Now move the block into Cell 1 Position
-                                ti = sub2ind([3 3],3,3); % Cell 1
+                                ti = 1; % Cell 1
                                 tabXY = BP.TTT(ti,:);
                                 TTTdropoff(socket,tabXY,tttapp); 
                                 block.type(6,6) = 1;
@@ -1022,7 +1022,7 @@ function Ass3GUI2RAPID()
                                 tabXY = BP.deckW(oi,:);
                                 TTTpickup(socket,tabXY,tttapp);
                                 deckW.state(oi) = 0;
-                                ti = sub2ind([3 3],3,2); % Cell 2
+                                ti = 2; % Cell 2
                                 tabXY = BP.TTT(ti,:);
                                 TTTdropoff(socket,tabXY,tttapp);
                                 block.type(6,5) = 0;
@@ -1031,7 +1031,7 @@ function Ass3GUI2RAPID()
                                 tabXY = BP.deckE(xi,:);
                                 TTTpickup(socket,tabXY,tttapp);
                                 deckE.state(xi) = 0;
-                                ti = sub2ind([3 3],3,2); % Cell 2
+                                ti = 2; % Cell 2
                                 tabXY = BP.TTT(ti,:);
                                 TTTdropoff(socket,tabXY,tttapp);
                                 block.type(6,5) = 1;
@@ -1051,7 +1051,7 @@ function Ass3GUI2RAPID()
                                 tabXY = BP.deckW(oi,:);
                                 TTTpickup(socket,tabXY,tttapp);
                                 deckW.state(oi) = 0;
-                                ti = sub2ind([3 3],3,1); % Cell 3
+                                ti = 3; % Cell 3
                                 tabXY = BP.TTT(ti,:);
                                 TTTdropoff(socket,tabXY,tttapp);
                                 block.type(6,4) = 0;
@@ -1060,7 +1060,7 @@ function Ass3GUI2RAPID()
                                 tabXY = BP.deckE(xi,:);
                                 TTTpickup(socket,tabXY,tttapp);
                                 deckE.state(xi) = 0;
-                                ti = sub2ind([3 3],3,1); % Cell 3
+                                ti = 3; % Cell 3
                                 tabXY = BP.TTT(ti,:);
                                 TTTdropoff(socket,tabXY,tttapp);
                                 block.type(6,4) = 1;
@@ -1080,7 +1080,7 @@ function Ass3GUI2RAPID()
                                 tabXY = BP.deckW(oi,:);
                                 TTTpickup(socket,tabXY,tttapp);
                                 deckW.state(oi) = 0;
-                                ti = sub2ind([3 3],2,3); % Cell 4
+                                ti = 4; % Cell 4
                                 tabXY = BP.TTT(ti,:);
                                 TTTdropoff(socket,tabXY,tttapp);
                                 block.type(5,6) = 0;
@@ -1089,7 +1089,7 @@ function Ass3GUI2RAPID()
                                 tabXY = BP.deckE(xi,:);
                                 TTTpickup(socket,tabXY,tttapp);
                                 deckE.state(xi) = 0;
-                                ti = sub2ind([3 3],2,3); % Cell 4
+                                ti = 4; % Cell 4
                                 tabXY = BP.TTT(ti,:);
                                 TTTdropoff(socket,tabXY,tttapp);
                                 block.type(5,6) = 1;
@@ -1109,7 +1109,7 @@ function Ass3GUI2RAPID()
                                 tabXY = BP.deckW(oi,:);
                                 TTTpickup(socket,tabXY,tttapp);
                                 deckW.state(oi) = 0;
-                                ti = sub2ind([3 3],2,2); % Cell 5
+                                ti = 5; % Cell 5
                                 tabXY = BP.TTT(ti,:);
                                 TTTdropoff(socket,tabXY,tttapp);
                                 block.type(5,5) = 0;
@@ -1118,7 +1118,7 @@ function Ass3GUI2RAPID()
                                 tabXY = BP.deckE(xi,:);
                                 BPpickup(socket,tabXY);
                                 deckE.state(xi) = 0;
-                                ti = sub2ind([3 3],2,2); % Cell 5
+                                ti = 5; % Cell 5
                                 tabXY = BP.TTT(ti,:);
                                 TTTdropoff(socket,tabXY,tttapp);
                                 block.type(5,5) = 1;
@@ -1138,7 +1138,7 @@ function Ass3GUI2RAPID()
                                 tabXY = BP.deckW(oi,:);
                                 TTTpickup(socket,tabXY,tttapp);
                                 deckW.state(oi) = 0;
-                                ti = sub2ind([3 3],2,1); % Cell 6
+                                ti = 6; % Cell 6
                                 tabXY = BP.TTT(ti,:);
                                 TTTdropoff(socket,tabXY,tttapp);
                                 block.type(5,4) = 0;
@@ -1147,7 +1147,7 @@ function Ass3GUI2RAPID()
                                 tabXY = BP.deckE(xi,:);
                                 TTTpickup(socket,tabXY,tttapp);
                                 deckE.state(xi) = 0;
-                                ti = sub2ind([3 3],2,1); % Cell 6
+                                ti = 6; % Cell 6
                                 tabXY = BP.TTT(ti,:);
                                 TTTdropoff(socket,tabXY,tttapp);
                                 block.type(5,4) = 1;
@@ -1167,7 +1167,7 @@ function Ass3GUI2RAPID()
                                 tabXY = BP.deckW(oi,:);
                                 TTTpickup(socket,tabXY,tttapp);
                                 deckW.state(oi) = 0;
-                                ti = sub2ind([3 3],1,3); % Cell 7
+                                ti = 7; % Cell 7
                                 tabXY = BP.TTT(ti,:);
                                 TTTdropoff(socket,tabXY,tttapp);
                                 block.type(4,6) = 0;
@@ -1176,7 +1176,7 @@ function Ass3GUI2RAPID()
                                 tabXY = BP.deckE(xi,:);
                                 TTTpickup(socket,tabXY,tttapp);
                                 deckE.state(xi) = 0;
-                                ti = sub2ind([3 3],1,3); % Cell 7
+                                ti = 7; % Cell 7
                                 tabXY = BP.TTT(ti,:);
                                 TTTdropoff(socket,tabXY,tttapp);
                                 block.type(4,6) = 1;
@@ -1196,7 +1196,7 @@ function Ass3GUI2RAPID()
                                 tabXY = BP.deckW(oi,:);
                                 TTTpickup(socket,tabXY,tttapp);
                                 deckW.state(oi) = 0;
-                                ti = sub2ind([3 3],1,2); % Cell 8
+                                ti = 8; % Cell 8
                                 tabXY = BP.TTT(ti,:);
                                 TTTdropoff(socket,tabXY,tttapp);
                                 block.type(4,5) = 0;
@@ -1205,7 +1205,7 @@ function Ass3GUI2RAPID()
                                 tabXY = BP.deckE(xi,:);
                                 TTTpickup(socket,tabXY,tttapp);
                                 deckE.state(xi) = 0;
-                                ti = sub2ind([3 3],1,2); % Cell 8
+                                ti = 8; % Cell 8
                                 tabXY = BP.TTT(ti,:);
                                 TTTdropoff(socket,tabXY,tttapp);
                                 block.type(4,5) = 1;
@@ -1225,7 +1225,7 @@ function Ass3GUI2RAPID()
                                 tabXY = BP.deckW(oi,:);
                                 TTTpickup(socket,tabXY,tttapp);
                                 deckW.state(oi) = 0;
-                                ti = sub2ind([3 3],1,1); % Cell 9
+                                ti = 9; % Cell 9
                                 tabXY = BP.TTT(ti,:);
                                 TTTdropoff(socket,tabXY,tttapp);
                                 block.type(4,4) = 0;
@@ -1234,7 +1234,7 @@ function Ass3GUI2RAPID()
                                 tabXY = BP.deckE(xi,:);
                                 TTTpickup(socket,tabXY,tttapp);
                                 deckE.state(xi) = 0;
-                                ti = sub2ind([3 3],1,1); % Cell 9
+                                ti = 9; % Cell 9
                                 tabXY = BP.TTT(ti,:);
                                 TTTdropoff(socket,tabXY,tttapp);
                                 block.type(4,4) = 1;
@@ -1252,7 +1252,7 @@ function Ass3GUI2RAPID()
                     tttapp.EndGameButtonVal = 0;
                     
                     % Pack up blocks
-                    ti = sub2ind([9 9],[4 5 6 4 5 6 4 5 6],[4 4 4 5 5 5 6 6 6]); %D4
+                    ti = sub2ind([9 9],[6 6 6 5 5 5 4 4 4],[6 5 4 6 5 4 6 5 4]); %D4
                     tttType = block.type(ti);
                     
                     P1blocksi = find(tttType==0);
@@ -1264,7 +1264,7 @@ function Ass3GUI2RAPID()
                             [r,c] = ind2sub([3 3],P1blocksi(i));
                             tabXY = P1XY(i,:);
                             BPpickup(socket,tabXY);
-                            board(r,c) = 0;
+                            board((4-r)+3,(4-c)+3) = 0;
                             
                             freeoi = find(deckW.state==0,1);
                             tabXY = BP.deckW(freeoi,:);
@@ -1283,7 +1283,7 @@ function Ass3GUI2RAPID()
                             [r,c] = ind2sub([3 3],P2blocksi(i));
                             tabXY = P2XY(i,:);
                             BPpickup(socket,tabXY);
-                            board(r,c) = 0;
+                            board((4-r)+3,(4-c)+3) = 0;
                             
                             freexi = find(deckE.state==0,1);
                             tabXY = BP.deckE(freexi,:);
@@ -1452,15 +1452,14 @@ function Ass3GUI2RAPID()
                         tabXY = BP.deckW(oi,:);
                         TTTpickup(socket,tabXY,tttapp);
                         deckW.state(oi) = 0;
-                        [ri,ci] = ind2sub([3 3],bestMove);
-                        ti = sub2ind([3 3],ri,ci);
+                        ti = bestMove;
                         tabXY = BP.TTT(ti,:);
                         TTTdropoff(socket,tabXY,tttapp);
                         
                         [ri,ci] = ind2sub([3 3],ti);
-                        block.type(ci+3,ri+3) = 0;
+                        block.type((4-ri)+3,(4-ci)+3) = 0;
                         
-                        board(ci+3,ri+3) = 1;
+                        board((4-ri)+3,(4-ci)+3) = 1;
                         turn = 1;
                         
                         %update board here ------------
@@ -1483,7 +1482,7 @@ function Ass3GUI2RAPID()
                             deckE.state(xi) = 0;
                             
                             % Now move the block into Cell 1 Position
-                            ti = sub2ind([3 3],3,3); % Cell 1
+                            ti = 1; % Cell 1
                             tabXY = BP.TTT(ti,:);
                             TTTdropoff(socket,tabXY,tttapp);
                             block.type(6,6) = 1;
@@ -1507,7 +1506,7 @@ function Ass3GUI2RAPID()
                             tabXY = BP.deckE(xi,:);
                             TTTpickup(socket,tabXY,tttapp);
                             deckE.state(xi) = 0;
-                            ti = sub2ind([3 3],3,2); % Cell 2
+                            ti = 2; % Cell 2
                             tabXY = BP.TTT(ti,:);
                             TTTdropoff(socket,tabXY,tttapp);
                             block.type(6,5) = 1;
@@ -1531,7 +1530,7 @@ function Ass3GUI2RAPID()
                             tabXY = BP.deckE(xi,:);
                             TTTpickup(socket,tabXY,tttapp);
                             deckE.state(xi) = 0;
-                            ti = sub2ind([3 3],3,1); % Cell 3
+                            ti = 3; % Cell 3
                             tabXY = BP.TTT(ti,:);
                             TTTdropoff(socket,tabXY,tttapp);
                             block.type(6,4) = 1;
@@ -1555,7 +1554,7 @@ function Ass3GUI2RAPID()
                             tabXY = BP.deckE(xi,:);
                             TTTpickup(socket,tabXY,tttapp);
                             deckE.state(xi) = 0;
-                            ti = sub2ind([3 3],2,3); % Cell 4
+                            ti = 4; % Cell 4
                             tabXY = BP.TTT(ti,:);
                             TTTdropoff(socket,tabXY,tttapp);
                             block.type(5,6) = 1;
@@ -1579,7 +1578,7 @@ function Ass3GUI2RAPID()
                             tabXY = BP.deckE(xi,:);
                             BPpickup(socket,tabXY);
                             deckE.state(xi) = 0;
-                            ti = sub2ind([3 3],2,2); % Cell 5
+                            ti = 5; % Cell 5
                             tabXY = BP.TTT(ti,:);
                             TTTdropoff(socket,tabXY,tttapp);
                             block.type(5,5) = 1;
@@ -1603,7 +1602,7 @@ function Ass3GUI2RAPID()
                             tabXY = BP.deckE(xi,:);
                             TTTpickup(socket,tabXY,tttapp);
                             deckE.state(xi) = 0;
-                            ti = sub2ind([3 3],2,1); % Cell 6
+                            ti = 6; % Cell 6
                             tabXY = BP.TTT(ti,:);
                             TTTdropoff(socket,tabXY,tttapp);
                             block.type(5,4) = 1;
@@ -1627,7 +1626,7 @@ function Ass3GUI2RAPID()
                             tabXY = BP.deckE(xi,:);
                             TTTpickup(socket,tabXY,tttapp);
                             deckE.state(xi) = 0;
-                            ti = sub2ind([3 3],1,3); % Cell 7
+                            ti = 7; % Cell 7
                             tabXY = BP.TTT(ti,:);
                             TTTdropoff(socket,tabXY,tttapp);
                             block.type(4,6) = 1;
@@ -1651,7 +1650,7 @@ function Ass3GUI2RAPID()
                             tabXY = BP.deckE(xi,:);
                             TTTpickup(socket,tabXY,tttapp);
                             deckE.state(xi) = 0;
-                            ti = sub2ind([3 3],1,2); % Cell 8
+                            ti = 8; % Cell 8
                             tabXY = BP.TTT(ti,:);
                             TTTdropoff(socket,tabXY,tttapp);
                             block.type(4,5) = 1;
@@ -1675,7 +1674,7 @@ function Ass3GUI2RAPID()
                             tabXY = BP.deckE(xi,:);
                             TTTpickup(socket,tabXY,tttapp);
                             deckE.state(xi) = 0;
-                            ti = sub2ind([3 3],1,1); % Cell 9
+                            ti = 9; % Cell 9
                             tabXY = BP.TTT(ti,:);
                             TTTdropoff(socket,tabXY,tttapp);
                             block.type(4,4) = 1;
@@ -1698,46 +1697,50 @@ function Ass3GUI2RAPID()
                 tttapp.EndGameButtonPressed = 0;
                 tttapp.EndGameButtonVal = 0;
                 
-                % Pack up game
-                ti = sub2ind([9 9],[4 5 6 4 5 6 4 5 6],[4 4 4 5 5 5 6 6 6]); %D4
+                % Pack up blocks
+                ti = sub2ind([9 9],[6 6 6 5 5 5 4 4 4],[6 5 4 6 5 4 6 5 4]); %D4
                 tttType = block.type(ti);
-
+                
                 P1blocksi = find(tttType==0);
-                P1XY = BP.TTT(P1blocksi,:);
-
-                for i = 1:size(P1XY,1)
-
-                    [r,c] = ind2sub([3 3],P1blocksi(i));
-                    tabXY = P1XY(i,:);
-                    BPpickup(socket,tabXY);
-                    board(r,c) = 0;
-
-                    freeoi = find(deckE.state==0,1);
-                    tabXY = BP.deckE(freeoi,:);
-                    BPdropoff(socket,tabXY);
-                    deckE.state(freeoi) = 1;
+                
+                if(~isempty(P1blocksi))
+                    P1XY = BP.TTT(P1blocksi,:);
+                    for i = 1:size(P1XY,1)
+                        
+                        [r,c] = ind2sub([3 3],P1blocksi(i));
+                        tabXY = P1XY(i,:);
+                        BPpickup(socket,tabXY);
+                        board((4-r)+3,(4-c)+3) = 0;
+                        
+                        freeoi = find(deckW.state==0,1);
+                        tabXY = BP.deckW(freeoi,:);
+                        BPdropoff(socket,tabXY);
+                        deckW.state(freeoi) = 1;
+                    end
                 end
-
+                
                 P2blocksi = find(tttType==1);
-                P2XY = BP.TTT(P2blocksi,:);
-
-                for i = 1:size(P2XY,1)
-
-                    [r,c] = ind2sub([3 3],P2blocksi(i));
-                    tabXY = P2XY(i,:);
-                    BPpickup(socket,tabXY);
-                    board(r,c) = 0;
-
-                    freexi = find(deckW.state==0,1);
-                    tabXY = BP.deckW(freexi,:);
-                    BPdropoff(socket,tabXY);
-                    deckW.state(freexi) = 1;
+                
+                if(~isempty(P2blocksi))
+                    P2XY = BP.TTT(P2blocksi,:);
+                    
+                    for i = 1:size(P2XY,1)
+                        
+                        [r,c] = ind2sub([3 3],P2blocksi(i));
+                        tabXY = P2XY(i,:);
+                        BPpickup(socket,tabXY);
+                        board((4-r)+3,(4-c)+3) = 0;
+                        
+                        freexi = find(deckE.state==0,1);
+                        tabXY = BP.deckE(freexi,:);
+                        BPdropoff(socket,tabXY);
+                        deckE.state(freexi) = 1;
+                    end
                 end
                 tttapp.delete;
                 mvapp.AIvPButtonPressed = 0;
             end
-                
-            
+
             pause(0.01);
             % Fall out if no longer connected
         end
