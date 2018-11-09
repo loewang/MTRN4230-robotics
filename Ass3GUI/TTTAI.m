@@ -1,10 +1,10 @@
 function bestMove = TTTAI(boardState)
 
     % human
-    human = 'O';
+    human = 'X';
 
     % ai
-    ai = 'X';
+    ai = 'O';
 
     % example board state
     boardState = {'O',2,'X',4,'O',6,'X','O','X'};
