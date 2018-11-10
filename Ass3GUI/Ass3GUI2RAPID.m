@@ -14,8 +14,10 @@ function Ass3GUI2RAPID()
     inmotion = 0;
     
     board = zeros(9,9);
-    deckE.state = zeros(6,1);
-    deckW.state = zeros(6,1);
+%     deckE.state = zeros(6,1);
+%     deckW.state = zeros(6,1);
+    deckE.state = ones(6,1);
+    deckW.state = ones(6,1);
 
     % BP coordinate system
     letters = {'A','B','C','D','E','F','G','H','I'}';
@@ -46,8 +48,15 @@ function Ass3GUI2RAPID()
     tablestate = [];
     listi = 1;
     
-    block.type = NaN(9,9);
-    block.theta = NaN(9,9);
+    table.type = NaN(9,9);
+    table.theta = NaN(9,9);
+    
+    constate = [];
+    
+    % camera setup
+    load('cameraConveyorParams.mat'); %Load Conveyor camera calibration
+    load('RotationMatrix.mat');
+    load('TranslationMatrix.mat');
     
     %clear table images
     tabImg = imageDatastore('clear table images');
@@ -496,6 +505,23 @@ function Ass3GUI2RAPID()
                 app.MoveButton_Pressed = 0;
                 pause(0.1);
             end
+                        
+            %update image-------------------------------------------------
+            
+            if(tabapp.UpdateImageButtonPressed)
+                tabapp.UpdateImageButtonPressed = 0;
+            end
+            
+            if(convapp.UpdateImageButtonPressed)
+                % vid2 = videoinput('winvideo', 2, 'MJPG_1600x1200');
+                % preview(vid2);
+                % img = getsnapshot(vid2);
+                img = imread('conveyor_img_10_03_11_39_04.jpg');
+                img = undistortImage(img, cameraConveyorParams); %Undistord image
+                constate = ConveyorImageProcess(img,cameraConveyorParams,R,t,convapp.UIAxes);
+                conv.BP = ones(size(constate,1),1);
+                convapp.UpdateImageButtonPressed = 0;
+            end
             
             %SIMPLE MOVE --------------------------------------------------
             if(mvapp.MOVEButtonPressed)  
@@ -517,13 +543,21 @@ function Ass3GUI2RAPID()
                            msg = sprintf('There is no block at %s',targetBP);
                            mvapp.StatusEditField_2.Value = msg;
                            pause(2);
+                       elseif(size(constate,1)==size(conv.XY,1))
+                           msg = 'Conveyor box full';
+                           mvapp.StatusEditField_2.Value = msg;
+                           pause(2);
                        else
                            msg = sprintf('Moving %s to conveyor...',targetBP);
                            mvapp.StatusEditField_2.Value = msg;
-                           board(ri,ci) = 0;
+
                            BPpickup(socket,tabXY);
-                           conXY = [0 0];
+                           board(ri,ci) = 0;
+                           
+                           freei = find(conv.BP==0,1);
+                           conXY = constate(freei,1:2);
                            CONdropoff(socket,conXY);
+                           conv.BP(freei) = 1;
                            
                            %remove block from list
                            editRow = find(tablestate(:,1)==BPi,1);
@@ -545,13 +579,21 @@ function Ass3GUI2RAPID()
                            msg = sprintf('%s is already occupied!',targetBP);
                            mvapp.StatusEditField_2.Value = msg;
                            pause(2);
+                       elseif(isempty(constate))
+                           msg = 'Conveyor box empty. Please add blocks';
+                           mvapp.StatusEditField_2.Value = msg;
+                           pause(2);
                        else
                            msg = sprintf('Moving to block to %s...',targetBP);
                            mvapp.StatusEditField_2.Value = msg;
-                           board(ri,ci) = 1;
-                           conXY = [0 0];
+                           
+                           filledi = find(conv.BP==1,1);
+                           conXY = constate(filledi,1:2);
                            CONpickup(socket,conXY);
+                           conv.BP(filledi) = 0;
+                           
                            BPdropoff(socket,tabXY);
+                           board(ri,ci) = 1;
                            
                            %add block to list
                            tablestate(listi,:) = [BPi 1 tabXY 90];
@@ -668,13 +710,20 @@ function Ass3GUI2RAPID()
                 
                 % check if Player 1
                 if(strcmp(mvapp.DropDown_2.Value, 'Player 1'))
+                    
+                    msg = 'Filling Player 1 deck';
+                    mvapp.StatusEditField_3.Value = msg;
+                    
                     BPi = find(deckW.state==0);
                     emptyBP = BP.deckW(BPi,:);
                     for i = 1:length(emptyBP)
         
-                        conXY = [0 0];
-                        tabXY = emptyBP(i,:);
-                        CONpickup(socket,conXY);       
+                        filledi = find(conv.BP==1,1);
+                        conXY = constate(filledi,1:2);
+                        CONpickup(socket,conXY);
+                        conv.BP(filledi) = 0;
+                        
+                        tabXY = emptyBP(i,:);      
                         BPdropoff(socket,tabXY); 
                         deckW.state(i) = 1;
                         
@@ -691,13 +740,19 @@ function Ass3GUI2RAPID()
                     
                 % Player 2
                 else
+                    msg = 'Filling Player 2 deck';
+                    mvapp.StatusEditField_3.Value = msg;
+                    
                     BPi = find(deckE.state==0);
                     emptyBP = BP.deckE(BPi,:);
                     for i = 1:length(emptyBP)
-        
-                        conXY = [0 0];
-                        tabXY = emptyBP(i,:);
-                        CONpickup(socket,conXY);       
+                        
+                        filledi = find(conv.BP==1,1);
+                        conXY = constate(filledi,1:2);
+                        CONpickup(socket,conXY);
+                        conv.BP(filledi) = 0;
+                        
+                        tabXY = emptyBP(i,:);    
                         BPdropoff(socket,tabXY); 
                         deckE.state(i) = 1;
                         
@@ -712,6 +767,9 @@ function Ass3GUI2RAPID()
                         end
                     end
                 end
+                
+                msg = 'Ready';
+                mvapp.StatusEditField_3.Value = msg;
                 mvapp.FILLButtonPressed = 0;
             end
 
@@ -723,12 +781,20 @@ function Ass3GUI2RAPID()
                 
                 % check if Player 1
                 if(strcmp(mvapp.DropDown_2.Value, 'Player 1'))
+                    
+                    msg = 'Discarding Player 1 deck';
+                    mvapp.StatusEditField_3.Value = msg;
+                    
                     BPi = find(deckW.state==1);
                     filledBP = BP.deckW(BPi,:);
                     
                     for i = 1:length(filledBP)
                         
-                        conXY = [0 0];
+                        freei = find(conv.BP==0,1);
+                        conXY = constate(freei,1:2);
+                        CONdropoff(socket,conXY);
+                        conv.BP(freei) = 1;
+                        
                         tabXY = filledBP(i,:);
                         BPpickup(socket,tabXY);
                         CONdropoff(socket,conXY);
@@ -750,11 +816,19 @@ function Ass3GUI2RAPID()
 
                 % Player 2
                 else
-                     BPi = find(deckE.state==1);
-                     filledBP = BP.deckE(BPi,:);
+                    msg = 'Discarding Player 2 deck';
+                    mvapp.StatusEditField_3.Value = msg;
                     
-                     for i = 1:length(filledBP)
-                        conXY = [0 0];
+                    BPi = find(deckE.state==1);
+                    filledBP = BP.deckE(BPi,:);
+                    
+                    for i = 1:length(filledBP)
+                        
+                        freei = find(conv.BP==0,1);
+                        conXY = constate(freei,1:2);
+                        CONdropoff(socket,conXY);
+                        conv.BP(freei) = 1;
+                        
                         tabXY = filledBP(i,:);
                         BPpickup(socket,tabXY);
                         CONdropoff(socket,conXY);
@@ -772,8 +846,12 @@ function Ass3GUI2RAPID()
                             mvapp.CANCELButtonPressed = 0;
                             break;
                         end
-                     end
+                    end
                 end
+                
+                msg = 'Ready';
+                mvapp.StatusEditField_3.Value = msg;
+
                 mvapp.DISCARDButtonPressed = 0;
             end
 
@@ -783,6 +861,9 @@ function Ass3GUI2RAPID()
                 fwrite(socket, 'SETSOLEN 0');
                 app.RobotReadyLamp.Color = 'r';
                 mvapp.RobotReadyLamp.Color = 'r';
+                
+                msg = 'Sorting decks';
+                mvapp.StatusEditField_3.Value = msg;
                 
                 tempXY = [360 0];
                 
@@ -835,7 +916,10 @@ function Ass3GUI2RAPID()
                         end
                     end
                 end
-
+                
+                msg = 'Ready';
+                mvapp.StatusEditField_3.Value = msg;
+                
                 mvapp.SORTButtonPressed = 0;
             end
 
@@ -844,16 +928,17 @@ function Ass3GUI2RAPID()
                 fwrite(socket, 'SETSOLEN 0');
                 app.RobotReadyLamp.Color = 'r';
                 mvapp.RobotReadyLamp.Color = 'r';
-                
-                
-                
+
                 scatteredBP = zeros(16,2); % array of scatters block XY coords
                 
                 for i = 1:size(scatteredBP,1)
                     tabXY = scatteredBP(i,:);
                     BPpickup(socket,tabXY);
-                    conXY = [0 0];
+                    
+                    freei = find(conv.BP==0,1);
+                    conXY = constate(freei,1:2);
                     CONdropoff(socket,conXY);
+                    conv.BP(freei) = 1;
                 end
                 
                 tablestate = [];
@@ -912,16 +997,6 @@ function Ass3GUI2RAPID()
                 mvapp.TableFILLButtonPressed = 0;
             end
             
-            %update image-------------------------------------------------
-            
-            if(tabapp.UpdateImageButtonPressed)
-                tabapp.UpdateImageButtonPressed = 0;
-            end
-            
-            if(convapp.UpdateImageButtonPressed)
-                convapp.UpdateImageButtonPressed = 0;
-            end
-            
             %correct detected blocks--------------------------------------
             
             if(tabapp.EDITButtonPressed)
@@ -931,9 +1006,9 @@ function Ass3GUI2RAPID()
                     board = zeros(9,9);
                     board(tablestate(:,1)) = 1;
                     
-                    block.type(tablestate(:,1)) = tablestate(:,2);
+                    table.type(tablestate(:,1)) = tablestate(:,2);
                     
-                    block.theta(tablestate(:,1)) = tablestate(:,5);
+                    table.theta(tablestate(:,1)) = tablestate(:,5);
                     
                 end
                 tabapp.EDITButtonPressed = 0;
@@ -967,301 +1042,306 @@ function Ass3GUI2RAPID()
             
             %-----------------------------------------PVP TicTacToe pressed
             if(mvapp.PvPButtonPressed)
-               
+                
                 oi = sum(deckW.state);
                 xi = sum(deckE.state);
                 
                 if(oi+xi==12)
                     % Open TTT GUI
                     tttapp = TTTGUI();
-                    pause(1);     
+                    pause(1);
                     c = zeros(1,9);
                     
                     while(tttapp.EndGameButtonPressed == 0)
-                  
+                        
                         % Once cell is pressed, calc the position on board (CP)
                         % The robot will pick up either a Letter or Shape block
                         % depending on the player turn, and release it on the Cell
                         % Point (CP).
                         
-                        % Cell 1 Pressed - D4
-                        if(tttapp.CellOneVal == 1 && c(1) == 0)
+                        if(tttapp.EndGameButtonVal ==1)
+                            tttapp.EndGameButtonPressed = 1;
+                        else
                             
-                            % Now we need to see which player turn it is.
-                            % Player 1 is 'O' (Shapes) and 2 is 'X'(Letters)
-                            if (tttapp.Cell1Button.Text == tttapp.Player1)
+                            % Cell 1 Pressed - D4
+                            if(tttapp.CellOneVal == 1 && c(1) == 0)
                                 
-                                % Player 1 deck is located WESTERN side of table
-                                % Move to first block pos (Western Side for Player 1)
-                                oi = find(deckW.state==1,1);
-                                tabXY = BP.deckW(oi,:);
-                                TTTpickup(socket,tabXY,tttapp);
-                                deckW.state(oi) = 0;
-                                
-                                % Now move the block into Cell 1 Position
-                                ti = 1; % Cell 1
-                                tabXY = BP.TTT(ti,:);
-                                TTTdropoff(socket,tabXY,tttapp);
-                                block.type(6,6) = 0;
-                            else
-                                xi = find(deckE.state==1,1);
-                                tabXY = BP.deckE(xi,:);
-                                TTTpickup(socket,tabXY,tttapp);
-                                deckE.state(xi) = 0;
-                                
-                                % Now move the block into Cell 1 Position
-                                ti = 1; % Cell 1
-                                tabXY = BP.TTT(ti,:);
-                                TTTdropoff(socket,tabXY,tttapp); 
-                                block.type(6,6) = 1;
+                                % Now we need to see which player turn it is.
+                                % Player 1 is 'O' (Shapes) and 2 is 'X'(Letters)
+                                if (tttapp.Cell1Button.Text == tttapp.Player1)
+                                    
+                                    % Player 1 deck is located WESTERN side of table
+                                    % Move to first block pos (Western Side for Player 1)
+                                    oi = find(deckW.state==1,1);
+                                    tabXY = BP.deckW(oi,:);
+                                    TTTpickup(socket,tabXY,tttapp);
+                                    deckW.state(oi) = 0;
+                                    
+                                    % Now move the block into Cell 1 Position
+                                    ti = 1; % Cell 1
+                                    tabXY = BP.TTT(ti,:);
+                                    TTTdropoff(socket,tabXY,tttapp);
+                                    table.type(6,6) = 0;
+                                else
+                                    xi = find(deckE.state==1,1);
+                                    tabXY = BP.deckE(xi,:);
+                                    TTTpickup(socket,tabXY,tttapp);
+                                    deckE.state(xi) = 0;
+                                    
+                                    % Now move the block into Cell 1 Position
+                                    ti = 1; % Cell 1
+                                    tabXY = BP.TTT(ti,:);
+                                    TTTdropoff(socket,tabXY,tttapp);
+                                    table.type(6,6) = 1;
+                                end
+                                board(6,6) = 1;
+                                c(1) = 1;
+                                BPi  = sub2ind([9 9],6,6);
+                                tablestate(listi,:) = [BPi 1 tabXY 90];
+                                listi = listi + 1;
+                                tabapp.UITable.Data = tablestate;
                             end
-                            board(6,6) = 1;
-                            c(1) = 1;
-                            BPi  = sub2ind([9 9],6,6);
-                            tablestate(listi,:) = [BPi 1 tabXY 90];
-                            listi = listi + 1;
-                            tabapp.UITable.Data = tablestate;
-                        end
-                        
-                        % Cell 2 Pressed - D5
-                        if(tttapp.CellTwoVal == 1 && c(2) == 0)
-                            if (tttapp.Cell2Button.Text == tttapp.Player1)
-                                oi = find(deckW.state==1,1);
-                                tabXY = BP.deckW(oi,:);
-                                TTTpickup(socket,tabXY,tttapp);
-                                deckW.state(oi) = 0;
-                                ti = 2; % Cell 2
-                                tabXY = BP.TTT(ti,:);
-                                TTTdropoff(socket,tabXY,tttapp);
-                                block.type(6,5) = 0;
-                            else
-                                xi = find(deckE.state==1,1);
-                                tabXY = BP.deckE(xi,:);
-                                TTTpickup(socket,tabXY,tttapp);
-                                deckE.state(xi) = 0;
-                                ti = 2; % Cell 2
-                                tabXY = BP.TTT(ti,:);
-                                TTTdropoff(socket,tabXY,tttapp);
-                                block.type(6,5) = 1;
+                            
+                            % Cell 2 Pressed - D5
+                            if(tttapp.CellTwoVal == 1 && c(2) == 0)
+                                if (tttapp.Cell2Button.Text == tttapp.Player1)
+                                    oi = find(deckW.state==1,1);
+                                    tabXY = BP.deckW(oi,:);
+                                    TTTpickup(socket,tabXY,tttapp);
+                                    deckW.state(oi) = 0;
+                                    ti = 2; % Cell 2
+                                    tabXY = BP.TTT(ti,:);
+                                    TTTdropoff(socket,tabXY,tttapp);
+                                    table.type(6,5) = 0;
+                                else
+                                    xi = find(deckE.state==1,1);
+                                    tabXY = BP.deckE(xi,:);
+                                    TTTpickup(socket,tabXY,tttapp);
+                                    deckE.state(xi) = 0;
+                                    ti = 2; % Cell 2
+                                    tabXY = BP.TTT(ti,:);
+                                    TTTdropoff(socket,tabXY,tttapp);
+                                    table.type(6,5) = 1;
+                                end
+                                board(6,5) = 1;
+                                c(2) = 1;
+                                BPi  = sub2ind([9 9],6,5);
+                                tablestate(listi,:) = [BPi 1 tabXY 90];
+                                listi = listi + 1;
+                                tabapp.UITable.Data = tablestate;
                             end
-                            board(6,5) = 1;
-                            c(2) = 1;
-                            BPi  = sub2ind([9 9],6,5);
-                            tablestate(listi,:) = [BPi 1 tabXY 90];
-                            listi = listi + 1;
-                            tabapp.UITable.Data = tablestate;
-                        end
-                        
-                        % Cell 3 Pressed - D6
-                        if(tttapp.CellThreeVal == 1 && c(3) == 0)
-                            if (tttapp.Cell3Button.Text == tttapp.Player1)
-                                oi = find(deckW.state==1,1);
-                                tabXY = BP.deckW(oi,:);
-                                TTTpickup(socket,tabXY,tttapp);
-                                deckW.state(oi) = 0;
-                                ti = 3; % Cell 3
-                                tabXY = BP.TTT(ti,:);
-                                TTTdropoff(socket,tabXY,tttapp);
-                                block.type(6,4) = 0;
-                            else
-                                xi = find(deckE.state==1,1);
-                                tabXY = BP.deckE(xi,:);
-                                TTTpickup(socket,tabXY,tttapp);
-                                deckE.state(xi) = 0;
-                                ti = 3; % Cell 3
-                                tabXY = BP.TTT(ti,:);
-                                TTTdropoff(socket,tabXY,tttapp);
-                                block.type(6,4) = 1;
+                            
+                            % Cell 3 Pressed - D6
+                            if(tttapp.CellThreeVal == 1 && c(3) == 0)
+                                if (tttapp.Cell3Button.Text == tttapp.Player1)
+                                    oi = find(deckW.state==1,1);
+                                    tabXY = BP.deckW(oi,:);
+                                    TTTpickup(socket,tabXY,tttapp);
+                                    deckW.state(oi) = 0;
+                                    ti = 3; % Cell 3
+                                    tabXY = BP.TTT(ti,:);
+                                    TTTdropoff(socket,tabXY,tttapp);
+                                    table.type(6,4) = 0;
+                                else
+                                    xi = find(deckE.state==1,1);
+                                    tabXY = BP.deckE(xi,:);
+                                    TTTpickup(socket,tabXY,tttapp);
+                                    deckE.state(xi) = 0;
+                                    ti = 3; % Cell 3
+                                    tabXY = BP.TTT(ti,:);
+                                    TTTdropoff(socket,tabXY,tttapp);
+                                    table.type(6,4) = 1;
+                                end
+                                board(6,4) = 1;
+                                c(3) = 1;
+                                BPi  = sub2ind([9 9],6,4);
+                                tablestate(listi,:) = [BPi 1 tabXY 90];
+                                listi = listi + 1;
+                                tabapp.UITable.Data = tablestate;
                             end
-                            board(6,4) = 1;
-                            c(3) = 1;
-                            BPi  = sub2ind([9 9],6,4);
-                            tablestate(listi,:) = [BPi 1 tabXY 90];
-                            listi = listi + 1;
-                            tabapp.UITable.Data = tablestate;
-                        end
-                        
-                        % Cell 4 Pressed - E4
-                        if(tttapp.CellFourVal == 1 && c(4) == 0)
-                            if (tttapp.Cell4Button.Text == tttapp.Player1)
-                                oi = find(deckW.state==1,1);
-                                tabXY = BP.deckW(oi,:);
-                                TTTpickup(socket,tabXY,tttapp);
-                                deckW.state(oi) = 0;
-                                ti = 4; % Cell 4
-                                tabXY = BP.TTT(ti,:);
-                                TTTdropoff(socket,tabXY,tttapp);
-                                block.type(5,6) = 0;
-                            else
-                                xi = find(deckE.state==1,1);
-                                tabXY = BP.deckE(xi,:);
-                                TTTpickup(socket,tabXY,tttapp);
-                                deckE.state(xi) = 0;
-                                ti = 4; % Cell 4
-                                tabXY = BP.TTT(ti,:);
-                                TTTdropoff(socket,tabXY,tttapp);
-                                block.type(5,6) = 1;
+                            
+                            % Cell 4 Pressed - E4
+                            if(tttapp.CellFourVal == 1 && c(4) == 0)
+                                if (tttapp.Cell4Button.Text == tttapp.Player1)
+                                    oi = find(deckW.state==1,1);
+                                    tabXY = BP.deckW(oi,:);
+                                    TTTpickup(socket,tabXY,tttapp);
+                                    deckW.state(oi) = 0;
+                                    ti = 4; % Cell 4
+                                    tabXY = BP.TTT(ti,:);
+                                    TTTdropoff(socket,tabXY,tttapp);
+                                    table.type(5,6) = 0;
+                                else
+                                    xi = find(deckE.state==1,1);
+                                    tabXY = BP.deckE(xi,:);
+                                    TTTpickup(socket,tabXY,tttapp);
+                                    deckE.state(xi) = 0;
+                                    ti = 4; % Cell 4
+                                    tabXY = BP.TTT(ti,:);
+                                    TTTdropoff(socket,tabXY,tttapp);
+                                    table.type(5,6) = 1;
+                                end
+                                board(5,6) = 1;
+                                c(4) = 1;
+                                BPi  = sub2ind([9 9],5,6);
+                                tablestate(listi,:) = [BPi 1 tabXY 90];
+                                listi = listi + 1;
+                                tabapp.UITable.Data = tablestate;
                             end
-                            board(5,6) = 1;
-                            c(4) = 1;
-                            BPi  = sub2ind([9 9],5,6);
-                            tablestate(listi,:) = [BPi 1 tabXY 90];
-                            listi = listi + 1;
-                            tabapp.UITable.Data = tablestate;
-                        end
-                        
-                        % Cell 5 Pressed - E5
-                        if(tttapp.CellFiveVal == 1 && c(5) == 0)
-                            if (tttapp.Cell5Button.Text == tttapp.Player1)
-                                oi = find(deckW.state==1,1);
-                                tabXY = BP.deckW(oi,:);
-                                TTTpickup(socket,tabXY,tttapp);
-                                deckW.state(oi) = 0;
-                                ti = 5; % Cell 5
-                                tabXY = BP.TTT(ti,:);
-                                TTTdropoff(socket,tabXY,tttapp);
-                                block.type(5,5) = 0;
-                            else
-                                xi = find(deckE.state==1,1);
-                                tabXY = BP.deckE(xi,:);
-                                BPpickup(socket,tabXY);
-                                deckE.state(xi) = 0;
-                                ti = 5; % Cell 5
-                                tabXY = BP.TTT(ti,:);
-                                TTTdropoff(socket,tabXY,tttapp);
-                                block.type(5,5) = 1;
+                            
+                            % Cell 5 Pressed - E5
+                            if(tttapp.CellFiveVal == 1 && c(5) == 0)
+                                if (tttapp.Cell5Button.Text == tttapp.Player1)
+                                    oi = find(deckW.state==1,1);
+                                    tabXY = BP.deckW(oi,:);
+                                    TTTpickup(socket,tabXY,tttapp);
+                                    deckW.state(oi) = 0;
+                                    ti = 5; % Cell 5
+                                    tabXY = BP.TTT(ti,:);
+                                    TTTdropoff(socket,tabXY,tttapp);
+                                    table.type(5,5) = 0;
+                                else
+                                    xi = find(deckE.state==1,1);
+                                    tabXY = BP.deckE(xi,:);
+                                    BPpickup(socket,tabXY);
+                                    deckE.state(xi) = 0;
+                                    ti = 5; % Cell 5
+                                    tabXY = BP.TTT(ti,:);
+                                    TTTdropoff(socket,tabXY,tttapp);
+                                    table.type(5,5) = 1;
+                                end
+                                board(5,5) = 1;
+                                c(5) = 1;
+                                BPi  = sub2ind([9 9],5,5);
+                                tablestate(listi,:) = [BPi 1 tabXY 90];
+                                listi = listi + 1;
+                                tabapp.UITable.Data = tablestate;
                             end
-                            board(5,5) = 1;
-                            c(5) = 1;
-                            BPi  = sub2ind([9 9],5,5);
-                            tablestate(listi,:) = [BPi 1 tabXY 90];
-                            listi = listi + 1;
-                            tabapp.UITable.Data = tablestate;
-                        end
-                        
-                        % Cell 6 Pressed - E6
-                        if(tttapp.CellSixVal == 1 && c(6) == 0)
-                            if (tttapp.Cell6Button.Text == tttapp.Player1)
-                                oi = find(deckW.state==1,1);
-                                tabXY = BP.deckW(oi,:);
-                                TTTpickup(socket,tabXY,tttapp);
-                                deckW.state(oi) = 0;
-                                ti = 6; % Cell 6
-                                tabXY = BP.TTT(ti,:);
-                                TTTdropoff(socket,tabXY,tttapp);
-                                block.type(5,4) = 0;
-                            else
-                                xi = find(deckE.state==1,1);
-                                tabXY = BP.deckE(xi,:);
-                                TTTpickup(socket,tabXY,tttapp);
-                                deckE.state(xi) = 0;
-                                ti = 6; % Cell 6
-                                tabXY = BP.TTT(ti,:);
-                                TTTdropoff(socket,tabXY,tttapp);
-                                block.type(5,4) = 1;
+                            
+                            % Cell 6 Pressed - E6
+                            if(tttapp.CellSixVal == 1 && c(6) == 0)
+                                if (tttapp.Cell6Button.Text == tttapp.Player1)
+                                    oi = find(deckW.state==1,1);
+                                    tabXY = BP.deckW(oi,:);
+                                    TTTpickup(socket,tabXY,tttapp);
+                                    deckW.state(oi) = 0;
+                                    ti = 6; % Cell 6
+                                    tabXY = BP.TTT(ti,:);
+                                    TTTdropoff(socket,tabXY,tttapp);
+                                    table.type(5,4) = 0;
+                                else
+                                    xi = find(deckE.state==1,1);
+                                    tabXY = BP.deckE(xi,:);
+                                    TTTpickup(socket,tabXY,tttapp);
+                                    deckE.state(xi) = 0;
+                                    ti = 6; % Cell 6
+                                    tabXY = BP.TTT(ti,:);
+                                    TTTdropoff(socket,tabXY,tttapp);
+                                    table.type(5,4) = 1;
+                                end
+                                board(5,4) = 1;
+                                c(6) = 1;
+                                BPi  = sub2ind([9 9],5,4);
+                                tablestate(listi,:) = [BPi 1 tabXY 90];
+                                listi = listi + 1;
+                                tabapp.UITable.Data = tablestate;
                             end
-                            board(5,4) = 1;
-                            c(6) = 1;
-                            BPi  = sub2ind([9 9],5,4);
-                            tablestate(listi,:) = [BPi 1 tabXY 90];
-                            listi = listi + 1;
-                            tabapp.UITable.Data = tablestate;
-                        end
-                        
-                        % Cell 7 Pressed - F4
-                        if(tttapp.CellSevenVal == 1 && c(7) == 0)
-                            if (tttapp.Cell7Button.Text == tttapp.Player1)
-                                oi = find(deckW.state==1,1);
-                                tabXY = BP.deckW(oi,:);
-                                TTTpickup(socket,tabXY,tttapp);
-                                deckW.state(oi) = 0;
-                                ti = 7; % Cell 7
-                                tabXY = BP.TTT(ti,:);
-                                TTTdropoff(socket,tabXY,tttapp);
-                                block.type(4,6) = 0;
-                            else
-                                xi = find(deckE.state==1,1);
-                                tabXY = BP.deckE(xi,:);
-                                TTTpickup(socket,tabXY,tttapp);
-                                deckE.state(xi) = 0;
-                                ti = 7; % Cell 7
-                                tabXY = BP.TTT(ti,:);
-                                TTTdropoff(socket,tabXY,tttapp);
-                                block.type(4,6) = 1;
+                            
+                            % Cell 7 Pressed - F4
+                            if(tttapp.CellSevenVal == 1 && c(7) == 0)
+                                if (tttapp.Cell7Button.Text == tttapp.Player1)
+                                    oi = find(deckW.state==1,1);
+                                    tabXY = BP.deckW(oi,:);
+                                    TTTpickup(socket,tabXY,tttapp);
+                                    deckW.state(oi) = 0;
+                                    ti = 7; % Cell 7
+                                    tabXY = BP.TTT(ti,:);
+                                    TTTdropoff(socket,tabXY,tttapp);
+                                    table.type(4,6) = 0;
+                                else
+                                    xi = find(deckE.state==1,1);
+                                    tabXY = BP.deckE(xi,:);
+                                    TTTpickup(socket,tabXY,tttapp);
+                                    deckE.state(xi) = 0;
+                                    ti = 7; % Cell 7
+                                    tabXY = BP.TTT(ti,:);
+                                    TTTdropoff(socket,tabXY,tttapp);
+                                    table.type(4,6) = 1;
+                                end
+                                board(4,6) = 1;
+                                c(7) = 1;
+                                BPi  = sub2ind([9 9],4,6);
+                                tablestate(listi,:) = [BPi 1 tabXY 90];
+                                listi = listi + 1;
+                                tabapp.UITable.Data = tablestate;
                             end
-                            board(4,6) = 1;
-                            c(7) = 1;
-                            BPi  = sub2ind([9 9],4,6);
-                            tablestate(listi,:) = [BPi 1 tabXY 90];
-                            listi = listi + 1;
-                            tabapp.UITable.Data = tablestate;
-                        end
-                        
-                        % Cell 8 Pressed - F5
-                        if(tttapp.CellEightVal == 1 && c(8) == 0)
-                            if (tttapp.Cell8Button.Text == tttapp.Player1)
-                                oi = find(deckW.state==1,1);
-                                tabXY = BP.deckW(oi,:);
-                                TTTpickup(socket,tabXY,tttapp);
-                                deckW.state(oi) = 0;
-                                ti = 8; % Cell 8
-                                tabXY = BP.TTT(ti,:);
-                                TTTdropoff(socket,tabXY,tttapp);
-                                block.type(4,5) = 0;
-                            else
-                                xi = find(deckE.state==1,1);
-                                tabXY = BP.deckE(xi,:);
-                                TTTpickup(socket,tabXY,tttapp);
-                                deckE.state(xi) = 0;
-                                ti = 8; % Cell 8
-                                tabXY = BP.TTT(ti,:);
-                                TTTdropoff(socket,tabXY,tttapp);
-                                block.type(4,5) = 1;
+                            
+                            % Cell 8 Pressed - F5
+                            if(tttapp.CellEightVal == 1 && c(8) == 0)
+                                if (tttapp.Cell8Button.Text == tttapp.Player1)
+                                    oi = find(deckW.state==1,1);
+                                    tabXY = BP.deckW(oi,:);
+                                    TTTpickup(socket,tabXY,tttapp);
+                                    deckW.state(oi) = 0;
+                                    ti = 8; % Cell 8
+                                    tabXY = BP.TTT(ti,:);
+                                    TTTdropoff(socket,tabXY,tttapp);
+                                    table.type(4,5) = 0;
+                                else
+                                    xi = find(deckE.state==1,1);
+                                    tabXY = BP.deckE(xi,:);
+                                    TTTpickup(socket,tabXY,tttapp);
+                                    deckE.state(xi) = 0;
+                                    ti = 8; % Cell 8
+                                    tabXY = BP.TTT(ti,:);
+                                    TTTdropoff(socket,tabXY,tttapp);
+                                    table.type(4,5) = 1;
+                                end
+                                board(4,5) = 1;
+                                c(8) = 1;
+                                BPi  = sub2ind([9 9],4,5);
+                                tablestate(listi,:) = [BPi 1 tabXY 90];
+                                listi = listi + 1;
+                                tabapp.UITable.Data = tablestate;
                             end
-                            board(4,5) = 1;
-                            c(8) = 1;
-                            BPi  = sub2ind([9 9],4,5);
-                            tablestate(listi,:) = [BPi 1 tabXY 90];
-                            listi = listi + 1;
-                            tabapp.UITable.Data = tablestate;
-                        end
-                        
-                        % Cell 9 Pressed - F6
-                        if(tttapp.CellNineVal == 1 && c(9) == 0)
-                            if (tttapp.Cell9Button.Text == tttapp.Player1)
-                                oi = find(deckW.state==1,1);
-                                tabXY = BP.deckW(oi,:);
-                                TTTpickup(socket,tabXY,tttapp);
-                                deckW.state(oi) = 0;
-                                ti = 9; % Cell 9
-                                tabXY = BP.TTT(ti,:);
-                                TTTdropoff(socket,tabXY,tttapp);
-                                block.type(4,4) = 0;
-                            else
-                                xi = find(deckE.state==1,1);
-                                tabXY = BP.deckE(xi,:);
-                                TTTpickup(socket,tabXY,tttapp);
-                                deckE.state(xi) = 0;
-                                ti = 9; % Cell 9
-                                tabXY = BP.TTT(ti,:);
-                                TTTdropoff(socket,tabXY,tttapp);
-                                block.type(4,4) = 1;
+                            
+                            % Cell 9 Pressed - F6
+                            if(tttapp.CellNineVal == 1 && c(9) == 0)
+                                if (tttapp.Cell9Button.Text == tttapp.Player1)
+                                    oi = find(deckW.state==1,1);
+                                    tabXY = BP.deckW(oi,:);
+                                    TTTpickup(socket,tabXY,tttapp);
+                                    deckW.state(oi) = 0;
+                                    ti = 9; % Cell 9
+                                    tabXY = BP.TTT(ti,:);
+                                    TTTdropoff(socket,tabXY,tttapp);
+                                    table.type(4,4) = 0;
+                                else
+                                    xi = find(deckE.state==1,1);
+                                    tabXY = BP.deckE(xi,:);
+                                    TTTpickup(socket,tabXY,tttapp);
+                                    deckE.state(xi) = 0;
+                                    ti = 9; % Cell 9
+                                    tabXY = BP.TTT(ti,:);
+                                    TTTdropoff(socket,tabXY,tttapp);
+                                    table.type(4,4) = 1;
+                                end
+                                board(4,4) = 1;
+                                c(9) = 1;
+                                BPi  = sub2ind([9 9],4,4);
+                                tablestate(listi,:) = [BPi 1 tabXY 90];
+                                listi = listi + 1;
+                                tabapp.UITable.Data = tablestate;
                             end
-                            board(4,4) = 1;
-                            c(9) = 1;
-                            BPi  = sub2ind([9 9],4,4);
-                            tablestate(listi,:) = [BPi 1 tabXY 90];
-                            listi = listi + 1;
-                            tabapp.UITable.Data = tablestate;
+                            pause(1);
                         end
-                        pause(1);
                     end
                     tttapp.EndGameButtonPressed = 0;
                     tttapp.EndGameButtonVal = 0;
-                    
+
                     % Pack up blocks
                     ti = sub2ind([9 9],[6 6 6 5 5 5 4 4 4],[6 5 4 6 5 4 6 5 4]); %D4
-                    tttType = block.type(ti);
+                    tttType = table.type(ti);
                     
                     P1blocksi = find(tttType==0);
                     
@@ -1328,407 +1408,453 @@ function Ass3GUI2RAPID()
             %AIvP---------------------------------------------------------
             
             if(mvapp.AIvPButtonPressed)
-                tttapp = TTTGUI();
-                pause(1);     
-                c = zeros(1,9);
-                
-                turn = 0;
-                
-                boardState = {1,2,3,4,5,6,7,8,9};
-                
-                % set a board state here before loop 
-                
-                while(tttapp.EndGameButtonPressed == 0)
 
-                    if(turn==0)
-                        bestMove = TTTAI(boardState);
-                        
-                        % Update GUI depending on the case
-                        switch bestMove
-                            case 1
-                                tttapp.Cell1Button.Text = tttapp.Player1;
-                                tttapp.Cell1Button.FontSize = 28;
-                                tttapp.Cell1Button.FontWeight = 'bold';
-                                tttapp.CellOneNum = 1;
-                                tttapp.PlayerTurnTextArea.Value = 'Player Two Turn';
-                                tttapp.PlayerTurnTextArea.FontColor = [0.00, 0.45, 0.74];
-                                tttapp.counter = tttapp.counter + 1;
-                                tttapp.CellOneVal = 1;
-                                tttapp.GameErrorsTextArea.Value = 'No Errors!';
-                                tttapp.Lamp.Enable = 'off';
-                                
-                                c(1) = 1;
-                                boardState{1} = 'O';
-                            case 2
-                                tttapp.Cell2Button.Text = tttapp.Player1;
-                                tttapp.Cell2Button.FontSize = 28;
-                                tttapp.Cell2Button.FontWeight = 'bold';
-                                tttapp.CellTwoNum = 1;
-                                tttapp.PlayerTurnTextArea.Value = 'Player Two Turn';
-                                tttapp.PlayerTurnTextArea.FontColor = [0.00, 0.45, 0.74];
-                                tttapp.counter = tttapp.counter + 1;
-                                tttapp.CellTwoVal = 1;
-                                tttapp.GameErrorsTextArea.Value = 'No Errors!';
-                                tttapp.Lamp_2.Enable = 'off';
-                                
-                                c(2) = 1;
-                                boardState{2} = 'O';
-                            case 3
-                                tttapp.Cell3Button.Text = tttapp.Player1;
-                                tttapp.Cell3Button.FontSize = 28;
-                                tttapp.Cell3Button.FontWeight = 'bold';
-                                tttapp.CellThreeNum = 1;
-                                tttapp.PlayerTurnTextArea.Value = 'Player Two Turn';
-                                tttapp.PlayerTurnTextArea.FontColor = [0.00, 0.45, 0.74];
-                                tttapp.counter = tttapp.counter + 1;
-                                tttapp.CellThreeVal = 1;
-                                tttapp.GameErrorsTextArea.Value = 'No Errors!';
-                                tttapp.Lamp_3.Enable = 'off';
-                                
-                                c(3) = 1;
-                                boardState{3} = 'O';
-                            case 4
-                                tttapp.Cell4Button.Text = tttapp.Player1;
-                                tttapp.Cell4Button.FontSize = 28;
-                                tttapp.Cell4Button.FontWeight = 'bold';
-                                tttapp.CellFourNum = 1;
-                                tttapp.PlayerTurnTextArea.Value = 'Player Two Turn';
-                                tttapp.PlayerTurnTextArea.FontColor = [0.00, 0.45, 0.74];
-                                tttapp.counter = tttapp.counter + 1;
-                                tttapp.CellFourVal = 1;
-                                tttapp.GameErrorsTextArea.Value = 'No Errors!';
-                                tttapp.Lamp_4.Enable = 'off';
-                                
-                                c(4) = 1;
-                                boardState{4} = 'O';
-                            case 5
-                                tttapp.Cell5Button.Text = tttapp.Player1;
-                                tttapp.Cell5Button.FontSize = 28;
-                                tttapp.Cell5Button.FontWeight = 'bold';
-                                tttapp.CellFiveNum = 1;
-                                tttapp.PlayerTurnTextArea.Value = 'Player Two Turn';
-                                tttapp.PlayerTurnTextArea.FontColor = [0.00, 0.45, 0.74];
-                                tttapp.counter = tttapp.counter + 1;
-                                tttapp.CellFiveVal = 1;
-                                tttapp.GameErrorsTextArea.Value = 'No Errors!';
-                                tttapp.Lamp_5.Enable = 'off';
-                                
-                                c(5) = 1;
-                                boardState{5} = 'O';
-                            case 6
-                                tttapp.Cell6Button.Text = tttapp.Player1;
-                                tttapp.Cell6Button.FontSize = 28;
-                                tttapp.Cell6Button.FontWeight = 'bold';
-                                tttapp.CellSixNum = 1;
-                                tttapp.PlayerTurnTextArea.Value = 'Player Two Turn';
-                                tttapp.PlayerTurnTextArea.FontColor = [0.00, 0.45, 0.74];
-                                tttapp.counter = tttapp.counter + 1;
-                                tttapp.CellSixVal = 1;
-                                tttapp.GameErrorsTextArea.Value = 'No Errors!';
-                                tttapp.Lamp_6.Enable = 'off';
-                                
-                                c(6) = 1;
-                                boardState{6} = 'O';
-                            case 7
-                                tttapp.Cell7Button.Text = tttapp.Player1;
-                                tttapp.Cell7Button.FontSize = 28;
-                                tttapp.Cell7Button.FontWeight = 'bold';
-                                tttapp.CellSevenNum = 1;
-                                tttapp.PlayerTurnTextArea.Value = 'Player Two Turn';
-                                tttapp.PlayerTurnTextArea.FontColor = [0.00, 0.45, 0.74];
-                                tttapp.counter = tttapp.counter + 1;
-                                tttapp.CellSevenVal = 1;
-                                tttapp.GameErrorsTextArea.Value = 'No Errors!';
-                                tttapp.Lamp_7.Enable = 'off';
-                                
-                                c(7) = 1;
-                                boardState{7} = 'O';
-                            case 8
-                                tttapp.Cell8Button.Text = tttapp.Player1;
-                                tttapp.Cell8Button.FontSize = 28;
-                                tttapp.Cell8Button.FontWeight = 'bold';
-                                tttapp.CellEightNum = 1;
-                                tttapp.PlayerTurnTextArea.Value = 'Player Two Turn';
-                                tttapp.PlayerTurnTextArea.FontColor = [0.00, 0.45, 0.74];
-                                tttapp.counter = tttapp.counter + 1;
-                                tttapp.CellEightVal = 1;
-                                tttapp.GameErrorsTextArea.Value = 'No Errors!';
-                                tttapp.Lamp_8.Enable = 'off';
-                                
-                                c(8) = 1;
-                                boardState{8} = 'O';
-                            case 9
-                                tttapp.Cell9Button.Text = tttapp.Player1;
-                                tttapp.Cell9Button.FontSize = 28;
-                                tttapp.Cell9Button.FontWeight = 'bold';
-                                tttapp.CellNineNum = 1;
-                                tttapp.PlayerTurnTextArea.Value = 'Player Two Turn';
-                                tttapp.PlayerTurnTextArea.FontColor = [0.00, 0.45, 0.74];
-                                tttapp.counter = tttapp.counter + 1;
-                                tttapp.CellNineVal = 1;
-                                tttapp.GameErrorsTextArea.Value = 'No Errors!';
-                                tttapp.Lamp_9.Enable = 'off';
-                                
-                                c(9) = 1;
-                                boardState{9} = 'O';
-                        end
-                        
-                        % Move block to position
-                        oi = find(deckW.state==1,1);
-                        tabXY = BP.deckW(oi,:);
-                        TTTpickup(socket,tabXY,tttapp);
-                        deckW.state(oi) = 0;
-                        ti = bestMove;
-                        tabXY = BP.TTT(ti,:);
-                        TTTdropoff(socket,tabXY,tttapp);
-                        
-                        [ri,ci] = ind2sub([3 3],ti);
-                        block.type((4-ri)+3,(4-ci)+3) = 0;
-                        
-                        board((4-ri)+3,(4-ci)+3) = 1;
-                        turn = 1;
-                        
-                        BPi  = sub2ind([9 9],(4-ri)+3,(4-ci)+3) ;
-                        tablestate(listi,:) = [BPi 0 tabXY 90];
-                        listi = listi + 1;
-                        tabapp.UITable.Data = tablestate;
+                oi = sum(deckW.state);
+                xi = sum(deckE.state);
+                
+                if(oi+xi==12)
+                    % Open TTT GUI
+                    tttapp = TTTGUI();
+                    pause(1);
+                    c = zeros(1,9);
+                    turn = 0;
+                    boardState = {1,2,3,4,5,6,7,8,9};
                     
-                    else
-                        
-                    % player's turns--------------------------------------
+                    % set a board state here before loop
                     
-                     % Once cell is pressed, calc the position on board (CP)
-                        % The robot will pick up either a Letter or Shape block
-                        % depending on the player turn, and release it on the Cell
-                        % Point (CP).
+                    while(tttapp.EndGameButtonPressed == 0)
                         
-                        % Cell 1 Pressed - D4
-                        if(tttapp.CellOneVal == 1 && c(1) == 0)
+                        if(tttapp.EndGameButtonVal == 1)
+                            tttapp.EndGameButtonPressed = 1;
+                        else
                             
-                            xi = find(deckE.state==1,1);
-                            tabXY = BP.deckE(xi,:);
-                            TTTpickup(socket,tabXY,tttapp);
-                            deckE.state(xi) = 0;
-                            
-                            % Now move the block into Cell 1 Position
-                            ti = 1; % Cell 1
-                            tabXY = BP.TTT(ti,:);
-                            TTTdropoff(socket,tabXY,tttapp);
-                            block.type(6,6) = 1;
-                            
-                            boardState{1} = 'X';
-                            
-                            board(6,6) = 1;
-                            c(1) = 1;
-                            BPi  = sub2ind([9 9],6,6);
-                            tablestate(listi,:) = [BPi 1 tabXY 90];
-                            listi = listi + 1;
-                            tabapp.UITable.Data = tablestate;
-                            
-                            turn = 0;
+                            if(turn==0)
+                                bestMove = TTTAI(boardState);
+                                
+                                % Update GUI depending on the case
+                                switch bestMove
+                                    case 1
+                                        tttapp.Cell1Button.Text = tttapp.Player1;
+                                        tttapp.Cell1Button.FontSize = 28;
+                                        tttapp.Cell1Button.FontWeight = 'bold';
+                                        tttapp.CellOneVal = 1;
+                                        tttapp.PlayerTurnTextArea.Value = 'Player Two Turn';
+                                        tttapp.PlayerTurnTextArea.FontColor = [0.00, 0.45, 0.74];
+                                        tttapp.counter = tttapp.counter + 1;
+                                        tttapp.CellOneNum = 1;
+                                        tttapp.GameErrorsTextArea.Value = 'No Errors!';
+                                        tttapp.Lamp.Enable = 'off';
+                                        
+                                        c(1) = 1;
+                                        boardState{1} = 'O';
+                                    case 2
+                                        tttapp.Cell2Button.Text = tttapp.Player1;
+                                        tttapp.Cell2Button.FontSize = 28;
+                                        tttapp.Cell2Button.FontWeight = 'bold';
+                                        tttapp.CellTwoNum = 1;
+                                        tttapp.PlayerTurnTextArea.Value = 'Player Two Turn';
+                                        tttapp.PlayerTurnTextArea.FontColor = [0.00, 0.45, 0.74];
+                                        tttapp.counter = tttapp.counter + 1;
+                                        tttapp.CellTwoVal = 1;
+                                        tttapp.GameErrorsTextArea.Value = 'No Errors!';
+                                        tttapp.Lamp_2.Enable = 'off';
+                                        
+                                        c(2) = 1;
+                                        boardState{2} = 'O';
+                                    case 3
+                                        tttapp.Cell3Button.Text = tttapp.Player1;
+                                        tttapp.Cell3Button.FontSize = 28;
+                                        tttapp.Cell3Button.FontWeight = 'bold';
+                                        tttapp.CellThreeNum = 1;
+                                        tttapp.PlayerTurnTextArea.Value = 'Player Two Turn';
+                                        tttapp.PlayerTurnTextArea.FontColor = [0.00, 0.45, 0.74];
+                                        tttapp.counter = tttapp.counter + 1;
+                                        tttapp.CellThreeVal = 1;
+                                        tttapp.GameErrorsTextArea.Value = 'No Errors!';
+                                        tttapp.Lamp_3.Enable = 'off';
+                                        
+                                        c(3) = 1;
+                                        boardState{3} = 'O';
+                                    case 4
+                                        tttapp.Cell4Button.Text = tttapp.Player1;
+                                        tttapp.Cell4Button.FontSize = 28;
+                                        tttapp.Cell4Button.FontWeight = 'bold';
+                                        tttapp.CellFourVal = 1;
+                                        tttapp.PlayerTurnTextArea.Value = 'Player Two Turn';
+                                        tttapp.PlayerTurnTextArea.FontColor = [0.00, 0.45, 0.74];
+                                        tttapp.counter = tttapp.counter + 1;
+                                        tttapp.CellFourNum = 1;
+                                        tttapp.GameErrorsTextArea.Value = 'No Errors!';
+                                        tttapp.Lamp_4.Enable = 'off';
+                                        
+                                        c(4) = 1;
+                                        boardState{4} = 'O';
+                                    case 5
+                                        tttapp.Cell5Button.Text = tttapp.Player1;
+                                        tttapp.Cell5Button.FontSize = 28;
+                                        tttapp.Cell5Button.FontWeight = 'bold';
+                                        tttapp.CellFiveNum = 1;
+                                        tttapp.PlayerTurnTextArea.Value = 'Player Two Turn';
+                                        tttapp.PlayerTurnTextArea.FontColor = [0.00, 0.45, 0.74];
+                                        tttapp.counter = tttapp.counter + 1;
+                                        tttapp.CellFiveVal = 1;
+                                        tttapp.GameErrorsTextArea.Value = 'No Errors!';
+                                        tttapp.Lamp_5.Enable = 'off';
+                                        
+                                        c(5) = 1;
+                                        boardState{5} = 'O';
+                                    case 6
+                                        tttapp.Cell6Button.Text = tttapp.Player1;
+                                        tttapp.Cell6Button.FontSize = 28;
+                                        tttapp.Cell6Button.FontWeight = 'bold';
+                                        tttapp.CellSixNum = 1;
+                                        tttapp.PlayerTurnTextArea.Value = 'Player Two Turn';
+                                        tttapp.PlayerTurnTextArea.FontColor = [0.00, 0.45, 0.74];
+                                        tttapp.counter = tttapp.counter + 1;
+                                        tttapp.CellSixVal = 1;
+                                        tttapp.GameErrorsTextArea.Value = 'No Errors!';
+                                        tttapp.Lamp_6.Enable = 'off';
+                                        
+                                        c(6) = 1;
+                                        boardState{6} = 'O';
+                                    case 7
+                                        tttapp.Cell7Button.Text = tttapp.Player1;
+                                        tttapp.Cell7Button.FontSize = 28;
+                                        tttapp.Cell7Button.FontWeight = 'bold';
+                                        tttapp.CellSevenNum = 1;
+                                        tttapp.PlayerTurnTextArea.Value = 'Player Two Turn';
+                                        tttapp.PlayerTurnTextArea.FontColor = [0.00, 0.45, 0.74];
+                                        tttapp.counter = tttapp.counter + 1;
+                                        tttapp.CellSevenVal = 1;
+                                        tttapp.GameErrorsTextArea.Value = 'No Errors!';
+                                        tttapp.Lamp_7.Enable = 'off';
+                                        
+                                        c(7) = 1;
+                                        boardState{7} = 'O';
+                                    case 8
+                                        tttapp.Cell8Button.Text = tttapp.Player1;
+                                        tttapp.Cell8Button.FontSize = 28;
+                                        tttapp.Cell8Button.FontWeight = 'bold';
+                                        tttapp.CellEightNum = 1;
+                                        tttapp.PlayerTurnTextArea.Value = 'Player Two Turn';
+                                        tttapp.PlayerTurnTextArea.FontColor = [0.00, 0.45, 0.74];
+                                        tttapp.counter = tttapp.counter + 1;
+                                        tttapp.CellEightVal = 1;
+                                        tttapp.GameErrorsTextArea.Value = 'No Errors!';
+                                        tttapp.Lamp_8.Enable = 'off';
+                                        
+                                        c(8) = 1;
+                                        boardState{8} = 'O';
+                                    case 9
+                                        tttapp.Cell9Button.Text = tttapp.Player1;
+                                        tttapp.Cell9Button.FontSize = 28;
+                                        tttapp.Cell9Button.FontWeight = 'bold';
+                                        tttapp.CellNineNum = 1;
+                                        tttapp.PlayerTurnTextArea.Value = 'Player Two Turn';
+                                        tttapp.PlayerTurnTextArea.FontColor = [0.00, 0.45, 0.74];
+                                        tttapp.counter = tttapp.counter + 1;
+                                        tttapp.CellNineVal = 1;
+                                        tttapp.GameErrorsTextArea.Value = 'No Errors!';
+                                        tttapp.Lamp_9.Enable = 'off';
+                                        
+                                        c(9) = 1;
+                                        boardState{9} = 'O';
+                                end
+                                
+                                % Move block to position
+                                oi = find(deckW.state==1,1);
+                                tabXY = BP.deckW(oi,:);
+                                TTTpickup(socket,tabXY,tttapp);
+                                deckW.state(oi) = 0;
+                                ti = bestMove;
+                                tabXY = BP.TTT(ti,:);
+                                TTTdropoff(socket,tabXY,tttapp);
+                                
+                                [ri,ci] = ind2sub([3 3],ti);
+                                table.type((4-ri)+3,(4-ci)+3) = 0;
+                                
+                                board((4-ri)+3,(4-ci)+3) = 1;
+                                turn = 1;
+                                
+                                BPi  = sub2ind([9 9],(4-ri)+3,(4-ci)+3) ;
+                                tablestate(listi,:) = [BPi 0 tabXY 90];
+                                listi = listi + 1;
+                                tabapp.UITable.Data = tablestate;
+                                
+                                res1 = tttapp.CellOneNum;
+                                res2 = tttapp.CellTwoNum;
+                                res3 = tttapp.CellThreeNum;
+                                res4 = tttapp.CellFourNum;
+                                res5 = tttapp.CellFiveNum;
+                                res6 = tttapp.CellSixNum;
+                                res7 = tttapp.CellSevenNum;
+                                res8 = tttapp.CellEightNum;
+                                res9 = tttapp.CellNineNum;
+                                
+                                % 1st row
+                                if((res1 * res2 * res3 == 1)||(res4 * res5 * res6 == 1)||(res7 * res8 * res9 == 1)...
+                                        ||(res1 * res4 * res7 == 1)||(res2 * res5 * res8 == 1)||(res3 * res6 * res9 == 1)...
+                                        ||(res1 * res5 * res9 == 1)||(res3 * res5 * res7 == 1))
+                                    tttapp.GameStateTextArea.Value = 'PLAYER 1 WINS!';
+                                    tttapp.GameStateTextArea.BackgroundColor = [1.00, 0, 0];
+                                    tttapp.PlayerTurnTextArea.FontColor = [0,0,0];
+                                    tttapp.PlayerTurnTextArea.Value = 'Game Over!';
+                                    tttapp.GameErrorsTextArea.Value = 'Game Over!';
+                                    tttapp.EndGameButtonVal = 1;
+                                elseif ((res1 + res2 + res3 == 6)||(res4 + res5 + res6 == 6)||(res7 + res8 + res9 == 6)...
+                                        ||(res1 + res4 + res7 == 6)||(res2 + res5 + res8 == 6)||(res3 + res6 + res9 == 6)...
+                                        ||(res1 + res5 + res9 == 6)||(res3 + res5 + res7 == 6))
+                                    tttapp.GameStateTextArea.Value = 'PLAYER 2 WINS!';
+                                    tttapp.GameStateTextArea.BackgroundColor = [0, 0.45, 0.74];
+                                    tttapp.PlayerTurnTextArea.FontColor = [0,0,0];
+                                    tttapp.PlayerTurnTextArea.Value = 'Game Over!';
+                                    tttapp.GameErrorsTextArea.Value = 'Game Over!';
+                                    tttapp.EndGameButtonVal = 1;
+                                elseif(sum(c)==9)
+                                    tttapp.GameStateTextArea.Value = 'Game has Drawn!';
+                                    tttapp.PlayerTurnTextArea.Value = 'Game Over!';
+                                    tttapp.GameErrorsTextArea.Value = 'Game Over!';
+                                    tttapp.EndGameButtonVal = 1;
+                                end
+                                
+                            else
+                                
+                                % player's turns--------------------------------------
+                                
+                                % Once cell is pressed, calc the position on board (CP)
+                                % The robot will pick up either a Letter or Shape block
+                                % depending on the player turn, and release it on the Cell
+                                % Point (CP).
+                                
+                                % Cell 1 Pressed - D4
+                                if(tttapp.CellOneVal == 1 && c(1) == 0)
+                                    
+                                    xi = find(deckE.state==1,1);
+                                    tabXY = BP.deckE(xi,:);
+                                    TTTpickup(socket,tabXY,tttapp);
+                                    deckE.state(xi) = 0;
+                                    
+                                    % Now move the block into Cell 1 Position
+                                    ti = 1; % Cell 1
+                                    tabXY = BP.TTT(ti,:);
+                                    TTTdropoff(socket,tabXY,tttapp);
+                                    table.type(6,6) = 1;
+                                    
+                                    boardState{1} = 'X';
+                                    
+                                    board(6,6) = 1;
+                                    c(1) = 1;
+                                    BPi  = sub2ind([9 9],6,6);
+                                    tablestate(listi,:) = [BPi 1 tabXY 90];
+                                    listi = listi + 1;
+                                    tabapp.UITable.Data = tablestate;
+                                    
+                                    turn = 0;
+                                end
+                                
+                                % Cell 2 Pressed - D5
+                                if(tttapp.CellTwoVal == 1 && c(2) == 0)
+                                    
+                                    xi = find(deckE.state==1,1);
+                                    tabXY = BP.deckE(xi,:);
+                                    TTTpickup(socket,tabXY,tttapp);
+                                    deckE.state(xi) = 0;
+                                    ti = 2; % Cell 2
+                                    tabXY = BP.TTT(ti,:);
+                                    TTTdropoff(socket,tabXY,tttapp);
+                                    table.type(6,5) = 1;
+                                    
+                                    boardState{2} = 'X';
+                                    
+                                    board(6,5) = 1;
+                                    c(2) = 1;
+                                    BPi  = sub2ind([9 9],6,5);
+                                    tablestate(listi,:) = [BPi 1 tabXY 90];
+                                    listi = listi + 1;
+                                    tabapp.UITable.Data = tablestate;
+                                    
+                                    turn = 0;
+                                end
+                                
+                                % Cell 3 Pressed - D6
+                                if(tttapp.CellThreeVal == 1 && c(3) == 0)
+                                    
+                                    xi = find(deckE.state==1,1);
+                                    tabXY = BP.deckE(xi,:);
+                                    TTTpickup(socket,tabXY,tttapp);
+                                    deckE.state(xi) = 0;
+                                    ti = 3; % Cell 3
+                                    tabXY = BP.TTT(ti,:);
+                                    TTTdropoff(socket,tabXY,tttapp);
+                                    table.type(6,4) = 1;
+                                    
+                                    boardState{3} = 'X';
+                                    
+                                    board(6,4) = 1;
+                                    c(3) = 1;
+                                    BPi  = sub2ind([9 9],6,4);
+                                    tablestate(listi,:) = [BPi 1 tabXY 90];
+                                    listi = listi + 1;
+                                    tabapp.UITable.Data = tablestate;
+                                    
+                                    turn = 0;
+                                end
+                                
+                                % Cell 4 Pressed - E4
+                                if(tttapp.CellFourVal == 1 && c(4) == 0)
+                                    
+                                    xi = find(deckE.state==1,1);
+                                    tabXY = BP.deckE(xi,:);
+                                    TTTpickup(socket,tabXY,tttapp);
+                                    deckE.state(xi) = 0;
+                                    ti = 4; % Cell 4
+                                    tabXY = BP.TTT(ti,:);
+                                    TTTdropoff(socket,tabXY,tttapp);
+                                    table.type(5,6) = 1;
+                                    
+                                    boardState{4} = 'X';
+                                    
+                                    board(5,6) = 1;
+                                    c(4) = 1;
+                                    BPi  = sub2ind([9 9],5,6);
+                                    tablestate(listi,:) = [BPi 1 tabXY 90];
+                                    listi = listi + 1;
+                                    tabapp.UITable.Data = tablestate;
+                                    
+                                    turn = 0;
+                                end
+                                
+                                % Cell 5 Pressed - E5
+                                if(tttapp.CellFiveVal == 1 && c(5) == 0)
+                                    
+                                    xi = find(deckE.state==1,1);
+                                    tabXY = BP.deckE(xi,:);
+                                    BPpickup(socket,tabXY);
+                                    deckE.state(xi) = 0;
+                                    ti = 5; % Cell 5
+                                    tabXY = BP.TTT(ti,:);
+                                    TTTdropoff(socket,tabXY,tttapp);
+                                    table.type(5,5) = 1;
+                                    
+                                    boardState{5} = 'X';
+                                    
+                                    board(5,5) = 1;
+                                    c(5) = 1;
+                                    BPi  = sub2ind([9 9],5,5);
+                                    tablestate(listi,:) = [BPi 1 tabXY 90];
+                                    listi = listi + 1;
+                                    tabapp.UITable.Data = tablestate;
+                                    
+                                    turn = 0;
+                                end
+                                
+                                % Cell 6 Pressed - E6
+                                if(tttapp.CellSixVal == 1 && c(6) == 0)
+                                    
+                                    xi = find(deckE.state==1,1);
+                                    tabXY = BP.deckE(xi,:);
+                                    TTTpickup(socket,tabXY,tttapp);
+                                    deckE.state(xi) = 0;
+                                    ti = 6; % Cell 6
+                                    tabXY = BP.TTT(ti,:);
+                                    TTTdropoff(socket,tabXY,tttapp);
+                                    table.type(5,4) = 1;
+                                    
+                                    boardState{6} = 'X';
+                                    
+                                    board(5,4) = 1;
+                                    c(6) = 1;
+                                    BPi  = sub2ind([9 9],5,4);
+                                    tablestate(listi,:) = [BPi 1 tabXY 90];
+                                    listi = listi + 1;
+                                    tabapp.UITable.Data = tablestate;
+                                    
+                                    turn = 0;
+                                end
+                                
+                                % Cell 7 Pressed - F4
+                                if(tttapp.CellSevenVal == 1 && c(7) == 0)
+                                    
+                                    xi = find(deckE.state==1,1);
+                                    tabXY = BP.deckE(xi,:);
+                                    TTTpickup(socket,tabXY,tttapp);
+                                    deckE.state(xi) = 0;
+                                    ti = 7; % Cell 7
+                                    tabXY = BP.TTT(ti,:);
+                                    TTTdropoff(socket,tabXY,tttapp);
+                                    table.type(4,6) = 1;
+                                    
+                                    boardState{7} = 'X';
+                                    
+                                    board(4,6) = 1;
+                                    c(7) = 1;
+                                    BPi  = sub2ind([9 9],4,6);
+                                    tablestate(listi,:) = [BPi 1 tabXY 90];
+                                    listi = listi + 1;
+                                    tabapp.UITable.Data = tablestate;
+                                    
+                                    turn = 0;
+                                end
+                                
+                                % Cell 8 Pressed - F5
+                                if(tttapp.CellEightVal == 1 && c(8) == 0)
+                                    
+                                    xi = find(deckE.state==1,1);
+                                    tabXY = BP.deckE(xi,:);
+                                    TTTpickup(socket,tabXY,tttapp);
+                                    deckE.state(xi) = 0;
+                                    ti = 8; % Cell 8
+                                    tabXY = BP.TTT(ti,:);
+                                    TTTdropoff(socket,tabXY,tttapp);
+                                    table.type(4,5) = 1;
+                                    
+                                    boardState{8} = 'X';
+                                    
+                                    board(4,5) = 1;
+                                    c(8) = 1;
+                                    BPi  = sub2ind([9 9],4,5);
+                                    tablestate(listi,:) = [BPi 1 tabXY 90];
+                                    listi = listi + 1;
+                                    tabapp.UITable.Data = tablestate;
+                                    
+                                    turn = 0;
+                                end
+                                
+                                % Cell 9 Pressed - F6
+                                if(tttapp.CellNineVal == 1 && c(9) == 0)
+                                    
+                                    xi = find(deckE.state==1,1);
+                                    tabXY = BP.deckE(xi,:);
+                                    TTTpickup(socket,tabXY,tttapp);
+                                    deckE.state(xi) = 0;
+                                    ti = 9; % Cell 9
+                                    tabXY = BP.TTT(ti,:);
+                                    TTTdropoff(socket,tabXY,tttapp);
+                                    table.type(4,4) = 1;
+                                    
+                                    boardState{9} = 'X';
+                                    
+                                    board(4,4) = 1;
+                                    c(9) = 1;
+                                    BPi  = sub2ind([9 9],4,4);
+                                    tablestate(listi,:) = [BPi 1 tabXY 90];
+                                    listi = listi + 1;
+                                    tabapp.UITable.Data = tablestate;
+                                    
+                                    turn = 0;
+                                end
+                                pause(1);
+                            end
                         end
-                        
-                        % Cell 2 Pressed - D5
-                        if(tttapp.CellTwoVal == 1 && c(2) == 0)
-                            
-                            xi = find(deckE.state==1,1);
-                            tabXY = BP.deckE(xi,:);
-                            TTTpickup(socket,tabXY,tttapp);
-                            deckE.state(xi) = 0;
-                            ti = 2; % Cell 2
-                            tabXY = BP.TTT(ti,:);
-                            TTTdropoff(socket,tabXY,tttapp);
-                            block.type(6,5) = 1;
-                            
-                            boardState{2} = 'X';
-                            
-                            board(6,5) = 1;
-                            c(2) = 1;
-                            BPi  = sub2ind([9 9],6,5);
-                            tablestate(listi,:) = [BPi 1 tabXY 90];
-                            listi = listi + 1;
-                            tabapp.UITable.Data = tablestate;
-                            
-                            turn = 0;
-                        end
-                        
-                        % Cell 3 Pressed - D6
-                        if(tttapp.CellThreeVal == 1 && c(3) == 0)
-                            
-                            xi = find(deckE.state==1,1);
-                            tabXY = BP.deckE(xi,:);
-                            TTTpickup(socket,tabXY,tttapp);
-                            deckE.state(xi) = 0;
-                            ti = 3; % Cell 3
-                            tabXY = BP.TTT(ti,:);
-                            TTTdropoff(socket,tabXY,tttapp);
-                            block.type(6,4) = 1;
-                            
-                            boardState{3} = 'X';
-                            
-                            board(6,4) = 1;
-                            c(3) = 1;
-                            BPi  = sub2ind([9 9],6,4);
-                            tablestate(listi,:) = [BPi 1 tabXY 90];
-                            listi = listi + 1;
-                            tabapp.UITable.Data = tablestate;
-                            
-                            turn = 0;
-                        end
-                        
-                        % Cell 4 Pressed - E4
-                        if(tttapp.CellFourVal == 1 && c(4) == 0)
-                            
-                            xi = find(deckE.state==1,1);
-                            tabXY = BP.deckE(xi,:);
-                            TTTpickup(socket,tabXY,tttapp);
-                            deckE.state(xi) = 0;
-                            ti = 4; % Cell 4
-                            tabXY = BP.TTT(ti,:);
-                            TTTdropoff(socket,tabXY,tttapp);
-                            block.type(5,6) = 1;
-                            
-                            boardState{4} = 'X';
-                            
-                            board(5,6) = 1;
-                            c(4) = 1;
-                            BPi  = sub2ind([9 9],5,6);
-                            tablestate(listi,:) = [BPi 1 tabXY 90];
-                            listi = listi + 1;
-                            tabapp.UITable.Data = tablestate;
-                            
-                            turn = 0;
-                        end
-                        
-                        % Cell 5 Pressed - E5
-                        if(tttapp.CellFiveVal == 1 && c(5) == 0)
-                            
-                            xi = find(deckE.state==1,1);
-                            tabXY = BP.deckE(xi,:);
-                            BPpickup(socket,tabXY);
-                            deckE.state(xi) = 0;
-                            ti = 5; % Cell 5
-                            tabXY = BP.TTT(ti,:);
-                            TTTdropoff(socket,tabXY,tttapp);
-                            block.type(5,5) = 1;
-                            
-                            boardState{5} = 'X';
-                            
-                            board(5,5) = 1;
-                            c(5) = 1;
-                            BPi  = sub2ind([9 9],5,5);
-                            tablestate(listi,:) = [BPi 1 tabXY 90];
-                            listi = listi + 1;
-                            tabapp.UITable.Data = tablestate;
-                            
-                            turn = 0;
-                        end
-                        
-                        % Cell 6 Pressed - E6
-                        if(tttapp.CellSixVal == 1 && c(6) == 0)
-                            
-                            xi = find(deckE.state==1,1);
-                            tabXY = BP.deckE(xi,:);
-                            TTTpickup(socket,tabXY,tttapp);
-                            deckE.state(xi) = 0;
-                            ti = 6; % Cell 6
-                            tabXY = BP.TTT(ti,:);
-                            TTTdropoff(socket,tabXY,tttapp);
-                            block.type(5,4) = 1;
-                            
-                            boardState{6} = 'X';
-                            
-                            board(5,4) = 1;
-                            c(6) = 1;
-                            BPi  = sub2ind([9 9],5,4);
-                            tablestate(listi,:) = [BPi 1 tabXY 90];
-                            listi = listi + 1;
-                            tabapp.UITable.Data = tablestate;
-                            
-                            turn = 0;
-                        end
-                        
-                        % Cell 7 Pressed - F4
-                        if(tttapp.CellSevenVal == 1 && c(7) == 0)
-                            
-                            xi = find(deckE.state==1,1);
-                            tabXY = BP.deckE(xi,:);
-                            TTTpickup(socket,tabXY,tttapp);
-                            deckE.state(xi) = 0;
-                            ti = 7; % Cell 7
-                            tabXY = BP.TTT(ti,:);
-                            TTTdropoff(socket,tabXY,tttapp);
-                            block.type(4,6) = 1;
-                            
-                            boardState{7} = 'X';
-                            
-                            board(4,6) = 1;
-                            c(7) = 1;
-                            BPi  = sub2ind([9 9],4,6);
-                            tablestate(listi,:) = [BPi 1 tabXY 90];
-                            listi = listi + 1;
-                            tabapp.UITable.Data = tablestate;
-                            
-                            turn = 0;
-                        end
-                        
-                        % Cell 8 Pressed - F5
-                        if(tttapp.CellEightVal == 1 && c(8) == 0)
-                            
-                            xi = find(deckE.state==1,1);
-                            tabXY = BP.deckE(xi,:);
-                            TTTpickup(socket,tabXY,tttapp);
-                            deckE.state(xi) = 0;
-                            ti = 8; % Cell 8
-                            tabXY = BP.TTT(ti,:);
-                            TTTdropoff(socket,tabXY,tttapp);
-                            block.type(4,5) = 1;
-                            
-                            boardState{8} = 'X';
-                            
-                            board(4,5) = 1;
-                            c(8) = 1;
-                            BPi  = sub2ind([9 9],4,5);
-                            tablestate(listi,:) = [BPi 1 tabXY 90];
-                            listi = listi + 1;
-                            tabapp.UITable.Data = tablestate;
-                            
-                            turn = 0;
-                        end
-                        
-                        % Cell 9 Pressed - F6
-                        if(tttapp.CellNineVal == 1 && c(9) == 0)
-                            
-                            xi = find(deckE.state==1,1);
-                            tabXY = BP.deckE(xi,:);
-                            TTTpickup(socket,tabXY,tttapp);
-                            deckE.state(xi) = 0;
-                            ti = 9; % Cell 9
-                            tabXY = BP.TTT(ti,:);
-                            TTTdropoff(socket,tabXY,tttapp);
-                            block.type(4,4) = 1;
-                            
-                            boardState{9} = 'X';
-                            
-                            board(4,4) = 1;
-                            c(9) = 1;
-                            BPi  = sub2ind([9 9],4,4);
-                            tablestate(listi,:) = [BPi 1 tabXY 90];
-                            listi = listi + 1;
-                            tabapp.UITable.Data = tablestate;
-                            
-                            turn = 0;
-                        end
-                        pause(1);
-                    end 
-                end 
+                    end
+                end
                 
                 tttapp.EndGameButtonPressed = 0;
                 tttapp.EndGameButtonVal = 0;
                 
                 % Pack up blocks
                 ti = sub2ind([9 9],[6 6 6 5 5 5 4 4 4],[6 5 4 6 5 4 6 5 4]); %D4
-                tttType = block.type(ti);
+                tttType = table.type(ti);
                 
                 P1blocksi = find(tttType==0);
                 
