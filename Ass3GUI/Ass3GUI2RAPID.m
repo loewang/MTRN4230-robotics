@@ -1136,6 +1136,7 @@ function Ass3GUI2RAPID()
                                     table.theta(6,6) = deckW.theta(oi);
                                     deckW.theta(oi) = NaN;
                                     
+                                    editRow = find(tablestate(:,1)==oi+100,1);
                                 else
                                     xi = find(deckE.state==1,1);
                                     tabXY = BP.deckE(xi,:);
@@ -1150,12 +1151,16 @@ function Ass3GUI2RAPID()
                                     table.type(6,6) = 1;
                                     table.theta(6,6) = deckE.theta(xi);
                                     deckE.theta(xi) = NaN;
+                                    
+                                    editRow = find(tablestate(:,1)==xi+200,1);
                                 end
                                 board(6,6) = 1;
                                 c(1) = 1;
                                 BPi  = sub2ind([9 9],6,6);
-                                tablestate(listi,:) = [BPi table.type(6,6) tabXY table.theta(6,6)];
-                                listi = listi + 1;
+                                
+                                %change block BPs
+                                tablestate(editRow,1) = BPi;
+                                tablestate(editRow,2:3) = tabXY;
                                 tabapp.UITable.Data = tablestate;
                             end
                             
@@ -1174,6 +1179,8 @@ function Ass3GUI2RAPID()
                                     table.type(6,5) = 0;
                                     table.theta(6,5) = deckW.theta(oi);
                                     deckW.theta(oi) = NaN;
+                                    
+                                    editRow = find(tablestate(:,1)==oi+100,1);
                                 else
                                     xi = find(deckE.state==1,1);
                                     tabXY = BP.deckE(xi,:);
@@ -1187,6 +1194,8 @@ function Ass3GUI2RAPID()
                                     table.type(6,5) = 1;
                                     table.theta(6,5) = deckE.theta(xi);
                                     deckE.theta(xi) = NaN;
+                                    
+                                    editRow = find(tablestate(:,1)==xi+200,1);
                                 end
                                 board(6,5) = 1;
                                 c(2) = 1;
@@ -1211,6 +1220,8 @@ function Ass3GUI2RAPID()
                                     table.type(6,4) = 0;
                                     table.theta(6,4) = deckW.theta(oi);
                                     deckW.theta(oi) = NaN;
+                                    
+                                    editRow = find(tablestate(:,1)==oi+100,1);
                                 else
                                     xi = find(deckE.state==1,1);
                                     tabXY = BP.deckE(xi,:);
@@ -1224,6 +1235,8 @@ function Ass3GUI2RAPID()
                                     table.type(6,4) = 1;
                                     table.theta(6,4) = deckE.theta(xi);
                                     deckE.theta(xi) = NaN;
+                                    
+                                    editRow = find(tablestate(:,1)==xi+200,1);
                                 end
                                 board(6,4) = 1;
                                 c(3) = 1;
@@ -1248,6 +1261,8 @@ function Ass3GUI2RAPID()
                                     table.type(5,6) = 0;
                                     table.theta(5,6) = deckW.theta(oi);
                                     deckW.theta(oi) = NaN;
+                                    
+                                    editRow = find(tablestate(:,1)==oi+100,1);
                                 else
                                     xi = find(deckE.state==1,1);
                                     tabXY = BP.deckE(xi,:);
@@ -1261,6 +1276,8 @@ function Ass3GUI2RAPID()
                                     table.type(5,6) = 1;
                                     table.theta(5,6) = deckE.theta(xi);
                                     deckE.theta(xi) = NaN;
+                                    
+                                    editRow = find(tablestate(:,1)==xi+200,1);
                                 end
                                 board(5,6) = 1;
                                 c(4) = 1;
@@ -1285,10 +1302,12 @@ function Ass3GUI2RAPID()
                                     table.type(5,5) = 0;
                                     table.theta(5,5) = deckW.theta(oi);
                                     deckW.theta(oi) = NaN;
+                                    
+                                    editRow = find(tablestate(:,1)==oi+100,1);
                                 else
                                     xi = find(deckE.state==1,1);
                                     tabXY = BP.deckE(xi,:);
-                                    BPpickup(socket,tabXY);
+                                    TTTpickup(socket,tabXY,tttapp);
                                     deckE.state(xi) = 0;
                                     deckE.type(xi) = NaN;
                                     
@@ -1298,6 +1317,8 @@ function Ass3GUI2RAPID()
                                     table.type(5,5) = 1;
                                     table.theta(5,5) = deckE.theta(xi);
                                     deckE.theta(xi) = NaN;
+                                    
+                                    editRow = find(tablestate(:,1)==xi+200,1);
                                 end
                                 board(5,5) = 1;
                                 c(5) = 1;
@@ -1322,6 +1343,8 @@ function Ass3GUI2RAPID()
                                     table.type(5,4) = 0;
                                     table.theta(5,4) = deckW.theta(oi);
                                     deckW.theta(oi) = NaN;
+                                    
+                                    editRow = find(tablestate(:,1)==oi+100,1);
                                 else
                                     xi = find(deckE.state==1,1);
                                     tabXY = BP.deckE(xi,:);
@@ -1335,6 +1358,8 @@ function Ass3GUI2RAPID()
                                     table.type(5,4) = 1;
                                     table.theta(5,4) = deckE.theta(xi);
                                     deckE.theta(xi) = NaN;
+                                    
+                                    editRow = find(tablestate(:,1)==xi+200,1);
                                 end
                                 board(5,4) = 1;
                                 c(6) = 1;
@@ -1359,6 +1384,8 @@ function Ass3GUI2RAPID()
                                     table.type(4,6) = 0;
                                     table.theta(4,6) = deckW.theta(oi);
                                     deckW.theta(oi) = NaN;
+                                    
+                                    editRow = find(tablestate(:,1)==oi+100,1);
                                 else
                                     xi = find(deckE.state==1,1);
                                     tabXY = BP.deckE(xi,:);
@@ -1372,6 +1399,8 @@ function Ass3GUI2RAPID()
                                     table.type(4,6) = 1;
                                     table.theta(4,6) = deckE.theta(xi);
                                     deckE.theta(xi) = NaN;
+                                    
+                                    editRow = find(tablestate(:,1)==xi+200,1);
                                 end
                                 board(4,6) = 1;
                                 c(7) = 1;
@@ -1396,6 +1425,8 @@ function Ass3GUI2RAPID()
                                     table.type(4,5) = 0;
                                     table.theta(4,5) = deckW.theta(oi);
                                     deckW.theta(oi) = NaN;
+                                    
+                                    editRow = find(tablestate(:,1)==oi+100,1);
                                 else
                                     xi = find(deckE.state==1,1);
                                     tabXY = BP.deckE(xi,:);
@@ -1409,6 +1440,8 @@ function Ass3GUI2RAPID()
                                     table.type(4,5) = 1;
                                     table.theta(4,5) = deckE.theta(xi);
                                     deckE.theta(xi) = NaN;
+                                    
+                                    editRow = find(tablestate(:,1)==xi+200,1);
                                 end
                                 board(4,5) = 1;
                                 c(8) = 1;
@@ -1433,6 +1466,8 @@ function Ass3GUI2RAPID()
                                     table.type(4,4) = 0;
                                     table.theta(4,4) = deckW.theta(oi);
                                     deckW.theta(oi) = NaN;
+                                    
+                                    editRow = find(tablestate(:,1)==oi+100,1);
                                 else
                                     xi = find(deckE.state==1,1);
                                     tabXY = BP.deckE(xi,:);
@@ -1446,6 +1481,8 @@ function Ass3GUI2RAPID()
                                     table.type(4,4) = 1;
                                     table.theta(4,4) = deckE.theta(xi);
                                     deckE.theta(xi) = NaN;
+                                    
+                                    editRow = find(tablestate(:,1)==xi+200,1);
                                 end
                                 board(4,4) = 1;
                                 c(9) = 1;
@@ -1535,7 +1572,7 @@ function Ass3GUI2RAPID()
             %AIvP---------------------------------------------------------
             
             if(mvapp.AIvPButtonPressed)
-
+                
                 oi = sum(deckW.state);
                 xi = sum(deckE.state);
                 
@@ -1697,7 +1734,7 @@ function Ass3GUI2RAPID()
                                 ti = bestMove;
                                 tabXY = BP.TTT(ti,:);
                                 TTTdropoff(socket,tabXY,tttapp);
-
+                                
                                 [ri,ci] = ind2sub([3 3],ti);
                                 table.type((4-ri)+3,(4-ci)+3) = 0;
                                 
@@ -1874,7 +1911,7 @@ function Ass3GUI2RAPID()
                                     
                                     xi = find(deckE.state==1,1);
                                     tabXY = BP.deckE(xi,:);
-                                    BPpickup(socket,tabXY);
+                                    TTTpickup(socket,tabXY,tttapp);
                                     deckE.state(xi) = 0;
                                     deckE.type(xi) = NaN;
                                     
@@ -2012,76 +2049,78 @@ function Ass3GUI2RAPID()
                             end
                         end
                     end
-                end
-                
-                tttapp.EndGameButtonPressed = 0;
-                tttapp.EndGameButtonVal = 0;
-                
-                % Pack up blocks
-                ti = sub2ind([9 9],[6 6 6 5 5 5 4 4 4],[6 5 4 6 5 4 6 5 4]); %D4
-                tttType = table.type(ti);
-                
-                P1blocksi = find(tttType==0);
-                
-                if(~isempty(P1blocksi))
-                    P1XY = BP.TTT(P1blocksi,:);
-                    for i = 1:size(P1XY,1)
-                        
-                        [r,c] = ind2sub([3 3],P1blocksi(i));
-                        tabXY = P1XY(i,:);
-                        BPpickup(socket,tabXY);
-                        board((4-r)+3,(4-c)+3) = 0;
-                        
-                        freeoi = find(deckW.state==0,1);
-                        tabXY = BP.deckW(freeoi,:);
-                        BPdropoff(socket,tabXY);
-                        deckW.state(freeoi) = 1;
-                        
-                        %remove block from list
-                        BPi = sub2ind([9 9],(4-r)+3,(4-c)+3);
-                        editRow = find(tablestate(:,1)==BPi,1);
-                        tablestate(editRow,:) = [freeoi+100 table.type((4-r)+3,(4-c)+3) tabXY table.theta((4-r)+3,(4-c)+3)];
-                        if(listi ~= 1)
-                            listi = listi - 1;
-                        end
-                        tabapp.UITable.Data = tablestate;
-                        
-                        table.type((4-r)+3,(4-c)+3) = NaN;
-                        table.theta((4-r)+3,(4-c)+3) = NaN;
-                    end
-                end
-                
-                P2blocksi = find(tttType==1);
-                
-                if(~isempty(P2blocksi))
-                    P2XY = BP.TTT(P2blocksi,:);
                     
-                    for i = 1:size(P2XY,1)
-                        
-                        [r,c] = ind2sub([3 3],P2blocksi(i));
-                        tabXY = P2XY(i,:);
-                        BPpickup(socket,tabXY);
-                        board((4-r)+3,(4-c)+3) = 0;
-                        
-                        freexi = find(deckE.state==0,1);
-                        tabXY = BP.deckE(freexi,:);
-                        BPdropoff(socket,tabXY);
-                        deckE.state(freexi) = 1;
-                        
-                        %remove block from list
-                        BPi = sub2ind([9 9],(4-r)+3,(4-c)+3);
-                        editRow = find(tablestate(:,1)==BPi,1);
-                        tablestate(editRow,:) = [freexi+200 table.type((4-r)+3,(4-c)+3) tabXY table.theta((4-r)+3,(4-c)+3)];
-                        if(listi ~= 1)
-                            listi = listi - 1;
+                    tttapp.EndGameButtonPressed = 0;
+                    tttapp.EndGameButtonVal = 0;
+                    
+                    % Pack up blocks
+                    ti = sub2ind([9 9],[6 6 6 5 5 5 4 4 4],[6 5 4 6 5 4 6 5 4]); %D4
+                    tttType = table.type(ti);
+                    
+                    P1blocksi = find(tttType==0);
+                    
+                    if(~isempty(P1blocksi))
+                        P1XY = BP.TTT(P1blocksi,:);
+                        for i = 1:size(P1XY,1)
+                            
+                            [r,c] = ind2sub([3 3],P1blocksi(i));
+                            tabXY = P1XY(i,:);
+                            BPpickup(socket,tabXY);
+                            board((4-r)+3,(4-c)+3) = 0;
+                            
+                            freeoi = find(deckW.state==0,1);
+                            tabXY = BP.deckW(freeoi,:);
+                            BPdropoff(socket,tabXY);
+                            deckW.state(freeoi) = 1;
+                            
+                            %remove block from list
+                            BPi = sub2ind([9 9],(4-r)+3,(4-c)+3);
+                            editRow = find(tablestate(:,1)==BPi,1);
+                            tablestate(editRow,:) = [freeoi+100 table.type((4-r)+3,(4-c)+3) tabXY table.theta((4-r)+3,(4-c)+3)];
+                            if(listi ~= 1)
+                                listi = listi - 1;
+                            end
+                            tabapp.UITable.Data = tablestate;
+                            
+                            table.type((4-r)+3,(4-c)+3) = NaN;
+                            table.theta((4-r)+3,(4-c)+3) = NaN;
                         end
-                        tabapp.UITable.Data = tablestate;
-                        
-                        table.type((4-r)+3,(4-c)+3) = NaN;
-                        table.theta((4-r)+3,(4-c)+3) = NaN;
                     end
+                    
+                    P2blocksi = find(tttType==1);
+                    
+                    if(~isempty(P2blocksi))
+                        P2XY = BP.TTT(P2blocksi,:);
+                        
+                        for i = 1:size(P2XY,1)
+                            
+                            [r,c] = ind2sub([3 3],P2blocksi(i));
+                            tabXY = P2XY(i,:);
+                            BPpickup(socket,tabXY);
+                            board((4-r)+3,(4-c)+3) = 0;
+                            
+                            freexi = find(deckE.state==0,1);
+                            tabXY = BP.deckE(freexi,:);
+                            BPdropoff(socket,tabXY);
+                            deckE.state(freexi) = 1;
+                            
+                            %remove block from list
+                            BPi = sub2ind([9 9],(4-r)+3,(4-c)+3);
+                            editRow = find(tablestate(:,1)==BPi,1);
+                            tablestate(editRow,:) = [freexi+200 table.type((4-r)+3,(4-c)+3) tabXY table.theta((4-r)+3,(4-c)+3)];
+                            if(listi ~= 1)
+                                listi = listi - 1;
+                            end
+                            tabapp.UITable.Data = tablestate;
+                            
+                            table.type((4-r)+3,(4-c)+3) = NaN;
+                            table.theta((4-r)+3,(4-c)+3) = NaN;
+                        end
+                    end
+                    tttapp.delete;
+                else
+                    disp("Decks aren't full");
                 end
-                tttapp.delete;
                 mvapp.AIvPButtonPressed = 0;
             end
 
