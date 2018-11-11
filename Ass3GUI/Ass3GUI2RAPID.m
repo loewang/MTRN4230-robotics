@@ -514,6 +514,13 @@ function Ass3GUI2RAPID()
             %update image-------------------------------------------------
             
             if(tabapp.UpdateImageButtonPressed)
+                % vid2 = videoinput('winvideo', 2, 'MJPG_1600x1200');
+                % preview(vid2);
+                % img = getsnapshot(vid2);
+                img = imread('table_img_10_03_11_59_57.jpg');
+                table.XY = TableImageProcess(img)';
+                tablestate = [NaN(size(table.XY,1),2) table.XY NaN(size(table.XY,1),1)];
+                tabapp.UITable.Data = tablestate;
                 tabapp.UpdateImageButtonPressed = 0;
             end
             
@@ -968,7 +975,7 @@ function Ass3GUI2RAPID()
                 app.RobotReadyLamp.Color = 'r';
                 mvapp.RobotReadyLamp.Color = 'r';
 
-                scatteredBP = zeros(16,2); % array of scatters block XY coords
+                scatteredBP = tablestate(:,3:4); % array of scatters block XY coords
                 
                 for i = 1:size(scatteredBP,1)
                     tabXY = scatteredBP(i,:);
@@ -1132,7 +1139,7 @@ function Ass3GUI2RAPID()
                                     ti = 1; % Cell 1
                                     tabXY = BP.TTT(ti,:);
                                     TTTdropoff(socket,tabXY,tttapp);
-                                    table.type(6,6) = 0;
+                                    table.type(6,6) = deckW.type(oi);
                                     table.theta(6,6) = deckW.theta(oi);
                                     deckW.theta(oi) = NaN;
                                     
@@ -1148,7 +1155,7 @@ function Ass3GUI2RAPID()
                                     ti = 1; % Cell 1
                                     tabXY = BP.TTT(ti,:);
                                     TTTdropoff(socket,tabXY,tttapp);
-                                    table.type(6,6) = 1;
+                                    table.type(6,6) = deckE.type(xi);
                                     table.theta(6,6) = deckE.theta(xi);
                                     deckE.theta(xi) = NaN;
                                     
@@ -1160,7 +1167,7 @@ function Ass3GUI2RAPID()
                                 
                                 %change block BPs
                                 tablestate(editRow,1) = BPi;
-                                tablestate(editRow,2:3) = tabXY;
+                                tablestate(editRow,3:4) = tabXY;
                                 tabapp.UITable.Data = tablestate;
                             end
                             
@@ -1176,7 +1183,7 @@ function Ass3GUI2RAPID()
                                     ti = 2; % Cell 2
                                     tabXY = BP.TTT(ti,:);
                                     TTTdropoff(socket,tabXY,tttapp);
-                                    table.type(6,5) = 0;
+                                    table.type(6,5) = deckW.type(oi);
                                     table.theta(6,5) = deckW.theta(oi);
                                     deckW.theta(oi) = NaN;
                                     
@@ -1191,7 +1198,7 @@ function Ass3GUI2RAPID()
                                     ti = 2; % Cell 2
                                     tabXY = BP.TTT(ti,:);
                                     TTTdropoff(socket,tabXY,tttapp);
-                                    table.type(6,5) = 1;
+                                    table.type(6,5) = deckE.type(xi);
                                     table.theta(6,5) = deckE.theta(xi);
                                     deckE.theta(xi) = NaN;
                                     
@@ -1200,8 +1207,9 @@ function Ass3GUI2RAPID()
                                 board(6,5) = 1;
                                 c(2) = 1;
                                 BPi  = sub2ind([9 9],6,5);
-                                tablestate(listi,:) = [BPi table.type(6,5) tabXY table.theta(6,5)];
-                                listi = listi + 1;
+                                %change block BPs
+                                tablestate(editRow,1) = BPi;
+                                tablestate(editRow,3:4) = tabXY;
                                 tabapp.UITable.Data = tablestate;
                             end
                             
@@ -1217,7 +1225,7 @@ function Ass3GUI2RAPID()
                                     ti = 3; % Cell 3
                                     tabXY = BP.TTT(ti,:);
                                     TTTdropoff(socket,tabXY,tttapp);
-                                    table.type(6,4) = 0;
+                                    table.type(6,4) = deckW.type(oi);
                                     table.theta(6,4) = deckW.theta(oi);
                                     deckW.theta(oi) = NaN;
                                     
@@ -1232,7 +1240,7 @@ function Ass3GUI2RAPID()
                                     ti = 3; % Cell 3
                                     tabXY = BP.TTT(ti,:);
                                     TTTdropoff(socket,tabXY,tttapp);
-                                    table.type(6,4) = 1;
+                                    table.type(6,4) = deckE.type(xi);
                                     table.theta(6,4) = deckE.theta(xi);
                                     deckE.theta(xi) = NaN;
                                     
@@ -1241,8 +1249,9 @@ function Ass3GUI2RAPID()
                                 board(6,4) = 1;
                                 c(3) = 1;
                                 BPi  = sub2ind([9 9],6,4);
-                                tablestate(listi,:) = [BPi table.type(6,4) tabXY table.theta(6,4)];
-                                listi = listi + 1;
+                                %change block BPs
+                                tablestate(editRow,1) = BPi;
+                                tablestate(editRow,3:4) = tabXY;
                                 tabapp.UITable.Data = tablestate;
                             end
                             
@@ -1258,7 +1267,7 @@ function Ass3GUI2RAPID()
                                     ti = 4; % Cell 4
                                     tabXY = BP.TTT(ti,:);
                                     TTTdropoff(socket,tabXY,tttapp);
-                                    table.type(5,6) = 0;
+                                    table.type(5,6) = deckW.type(oi);
                                     table.theta(5,6) = deckW.theta(oi);
                                     deckW.theta(oi) = NaN;
                                     
@@ -1273,7 +1282,7 @@ function Ass3GUI2RAPID()
                                     ti = 4; % Cell 4
                                     tabXY = BP.TTT(ti,:);
                                     TTTdropoff(socket,tabXY,tttapp);
-                                    table.type(5,6) = 1;
+                                    table.type(5,6) = deckE.type(xi);
                                     table.theta(5,6) = deckE.theta(xi);
                                     deckE.theta(xi) = NaN;
                                     
@@ -1282,8 +1291,9 @@ function Ass3GUI2RAPID()
                                 board(5,6) = 1;
                                 c(4) = 1;
                                 BPi  = sub2ind([9 9],5,6);
-                                tablestate(listi,:) = [BPi table.type(5,6) tabXY table.theta(5,6)];
-                                listi = listi + 1;
+                                %change block BPs
+                                tablestate(editRow,1) = BPi;
+                                tablestate(editRow,3:4) = tabXY;
                                 tabapp.UITable.Data = tablestate;
                             end
                             
@@ -1299,7 +1309,7 @@ function Ass3GUI2RAPID()
                                     ti = 5; % Cell 5
                                     tabXY = BP.TTT(ti,:);
                                     TTTdropoff(socket,tabXY,tttapp);
-                                    table.type(5,5) = 0;
+                                    table.type(5,5) = deckW.type(oi);
                                     table.theta(5,5) = deckW.theta(oi);
                                     deckW.theta(oi) = NaN;
                                     
@@ -1314,7 +1324,7 @@ function Ass3GUI2RAPID()
                                     ti = 5; % Cell 5
                                     tabXY = BP.TTT(ti,:);
                                     TTTdropoff(socket,tabXY,tttapp);
-                                    table.type(5,5) = 1;
+                                    table.type(5,5) = deckE.type(xi);
                                     table.theta(5,5) = deckE.theta(xi);
                                     deckE.theta(xi) = NaN;
                                     
@@ -1323,8 +1333,9 @@ function Ass3GUI2RAPID()
                                 board(5,5) = 1;
                                 c(5) = 1;
                                 BPi  = sub2ind([9 9],5,5);
-                                tablestate(listi,:) = [BPi table.type(5,5) tabXY table.theta(5,5)];
-                                listi = listi + 1;
+                                %change block BPs
+                                tablestate(editRow,1) = BPi;
+                                tablestate(editRow,3:4) = tabXY;
                                 tabapp.UITable.Data = tablestate;
                             end
                             
@@ -1340,7 +1351,7 @@ function Ass3GUI2RAPID()
                                     ti = 6; % Cell 6
                                     tabXY = BP.TTT(ti,:);
                                     TTTdropoff(socket,tabXY,tttapp);
-                                    table.type(5,4) = 0;
+                                    table.type(5,4) = deckW.type(oi);
                                     table.theta(5,4) = deckW.theta(oi);
                                     deckW.theta(oi) = NaN;
                                     
@@ -1355,7 +1366,7 @@ function Ass3GUI2RAPID()
                                     ti = 6; % Cell 6
                                     tabXY = BP.TTT(ti,:);
                                     TTTdropoff(socket,tabXY,tttapp);
-                                    table.type(5,4) = 1;
+                                    table.type(5,4) = deckE.type(xi);
                                     table.theta(5,4) = deckE.theta(xi);
                                     deckE.theta(xi) = NaN;
                                     
@@ -1364,8 +1375,9 @@ function Ass3GUI2RAPID()
                                 board(5,4) = 1;
                                 c(6) = 1;
                                 BPi  = sub2ind([9 9],5,4);
-                                tablestate(listi,:) = [BPi table.type(5,4) tabXY table.theta(5,4)];
-                                listi = listi + 1;
+                                %change block BPs
+                                tablestate(editRow,1) = BPi;
+                                tablestate(editRow,3:4) = tabXY;
                                 tabapp.UITable.Data = tablestate;
                             end
                             
@@ -1381,7 +1393,7 @@ function Ass3GUI2RAPID()
                                     ti = 7; % Cell 7
                                     tabXY = BP.TTT(ti,:);
                                     TTTdropoff(socket,tabXY,tttapp);
-                                    table.type(4,6) = 0;
+                                    table.type(4,6) = deckW.type(oi);
                                     table.theta(4,6) = deckW.theta(oi);
                                     deckW.theta(oi) = NaN;
                                     
@@ -1396,7 +1408,7 @@ function Ass3GUI2RAPID()
                                     ti = 7; % Cell 7
                                     tabXY = BP.TTT(ti,:);
                                     TTTdropoff(socket,tabXY,tttapp);
-                                    table.type(4,6) = 1;
+                                    table.type(4,6) = deckE.type(xi);
                                     table.theta(4,6) = deckE.theta(xi);
                                     deckE.theta(xi) = NaN;
                                     
@@ -1405,8 +1417,9 @@ function Ass3GUI2RAPID()
                                 board(4,6) = 1;
                                 c(7) = 1;
                                 BPi  = sub2ind([9 9],4,6);
-                                tablestate(listi,:) = [BPi table.type(4,6) tabXY table.theta(4,6)];
-                                listi = listi + 1;
+                                %change block BPs
+                                tablestate(editRow,1) = BPi;
+                                tablestate(editRow,3:4) = tabXY;
                                 tabapp.UITable.Data = tablestate;
                             end
                             
@@ -1422,7 +1435,7 @@ function Ass3GUI2RAPID()
                                     ti = 8; % Cell 8
                                     tabXY = BP.TTT(ti,:);
                                     TTTdropoff(socket,tabXY,tttapp);
-                                    table.type(4,5) = 0;
+                                    table.type(4,5) = deckW.type(oi);
                                     table.theta(4,5) = deckW.theta(oi);
                                     deckW.theta(oi) = NaN;
                                     
@@ -1437,7 +1450,7 @@ function Ass3GUI2RAPID()
                                     ti = 8; % Cell 8
                                     tabXY = BP.TTT(ti,:);
                                     TTTdropoff(socket,tabXY,tttapp);
-                                    table.type(4,5) = 1;
+                                    table.type(4,5) = deckE.type(xi);
                                     table.theta(4,5) = deckE.theta(xi);
                                     deckE.theta(xi) = NaN;
                                     
@@ -1446,8 +1459,9 @@ function Ass3GUI2RAPID()
                                 board(4,5) = 1;
                                 c(8) = 1;
                                 BPi  = sub2ind([9 9],4,5);
-                                tablestate(listi,:) = [BPi table.type(4,5) tabXY table.theta(4,5)];
-                                listi = listi + 1;
+                               %change block BPs
+                                tablestate(editRow,1) = BPi;
+                                tablestate(editRow,3:4) = tabXY;
                                 tabapp.UITable.Data = tablestate;
                             end
                             
@@ -1463,7 +1477,7 @@ function Ass3GUI2RAPID()
                                     ti = 9; % Cell 9
                                     tabXY = BP.TTT(ti,:);
                                     TTTdropoff(socket,tabXY,tttapp);
-                                    table.type(4,4) = 0;
+                                    table.type(4,4) = deckW.type(oi);
                                     table.theta(4,4) = deckW.theta(oi);
                                     deckW.theta(oi) = NaN;
                                     
@@ -1478,7 +1492,7 @@ function Ass3GUI2RAPID()
                                     ti = 9; % Cell 9
                                     tabXY = BP.TTT(ti,:);
                                     TTTdropoff(socket,tabXY,tttapp);
-                                    table.type(4,4) = 1;
+                                    table.type(4,4) = deckE.type(xi);
                                     table.theta(4,4) = deckE.theta(xi);
                                     deckE.theta(xi) = NaN;
                                     
@@ -1487,8 +1501,9 @@ function Ass3GUI2RAPID()
                                 board(4,4) = 1;
                                 c(9) = 1;
                                 BPi  = sub2ind([9 9],4,4);
-                                tablestate(listi,:) = [BPi table.type(4,4) tabXY table.theta(4,4)];
-                                listi = listi + 1;
+                                %change block BPs
+                                tablestate(editRow,1) = BPi;
+                                tablestate(editRow,3:4) = tabXY;
                                 tabapp.UITable.Data = tablestate;
                             end
                             pause(1);
@@ -1521,9 +1536,6 @@ function Ass3GUI2RAPID()
                             BPi = sub2ind([9 9],(4-r)+3,(4-c)+3);
                             editRow = find(tablestate(:,1)==BPi,1);
                             tablestate(editRow,:) = [freeoi+100 table.type((4-r)+3,(4-c)+3) tabXY table.theta((4-r)+3,(4-c)+3)];
-                            if(listi ~= 1)
-                                listi = listi - 1;
-                            end
                             tabapp.UITable.Data = tablestate;
                             
                             table.type((4-r)+3,(4-c)+3) = NaN;
@@ -1552,9 +1564,6 @@ function Ass3GUI2RAPID()
                             BPi = sub2ind([9 9],(4-r)+3,(4-c)+3);
                             editRow = find(tablestate(:,1)==BPi,1);
                             tablestate(editRow,:) = [freexi+200 table.type((4-r)+3,(4-c)+3) tabXY table.theta((4-r)+3,(4-c)+3)];
-                            if(listi ~= 1)
-                                listi = listi - 1;
-                            end
                             tabapp.UITable.Data = tablestate;
                             
                             table.type((4-r)+3,(4-c)+3) = NaN;
@@ -1736,16 +1745,19 @@ function Ass3GUI2RAPID()
                                 TTTdropoff(socket,tabXY,tttapp);
                                 
                                 [ri,ci] = ind2sub([3 3],ti);
-                                table.type((4-ri)+3,(4-ci)+3) = 0;
+                                table.type((4-ri)+3,(4-ci)+3) = deckW.type(oi);
                                 
                                 board((4-ri)+3,(4-ci)+3) = 1;
-                                table.theta((4-ri)+3,(4-ci)+3) = deckE.theta(xi);
-                                deckE.theta(xi) = NaN;
+                                table.theta((4-ri)+3,(4-ci)+3) = deckW.theta(oi);
+                                deckW.theta(oi) = NaN;
                                 turn = 1;
                                 
-                                BPi  = sub2ind([9 9],(4-ri)+3,(4-ci)+3) ;
-                                tablestate(listi,:) = [BPi table.type((4-ri)+3,(4-ci)+3) tabXY table.theta((4-ri)+3,(4-ci)+3)];
-                                listi = listi + 1;
+                                BPi  = sub2ind([9 9],(4-ri)+3,(4-ci)+3);
+                                
+                                editRow = find(tablestate(:,1)==oi+100,1);
+                                %change block BPs
+                                tablestate(editRow,1) = BPi;
+                                tablestate(editRow,3:4) = tabXY;
                                 tabapp.UITable.Data = tablestate;
                                 
                                 res1 = tttapp.CellOneNum;
@@ -1806,7 +1818,7 @@ function Ass3GUI2RAPID()
                                     ti = 1; % Cell 1
                                     tabXY = BP.TTT(ti,:);
                                     TTTdropoff(socket,tabXY,tttapp);
-                                    table.type(6,6) = 1;
+                                    table.type(6,6) = deckE.type(xi);
                                     table.theta(6,6) = deckE.theta(xi);
                                     deckE.theta(xi) = NaN;
                                     
@@ -1815,8 +1827,10 @@ function Ass3GUI2RAPID()
                                     board(6,6) = 1;
                                     c(1) = 1;
                                     BPi  = sub2ind([9 9],6,6);
-                                    tablestate(listi,:) = [BPi table.type(6,6) tabXY table.theta(6,6)];
-                                    listi = listi + 1;
+                                    editRow = find(tablestate(:,1)==xi+200,1);
+                                    %change block BPs
+                                    tablestate(editRow,1) = BPi;
+                                    tablestate(editRow,3:4) = tabXY;
                                     tabapp.UITable.Data = tablestate;
                                     
                                     turn = 0;
@@ -1834,7 +1848,7 @@ function Ass3GUI2RAPID()
                                     ti = 2; % Cell 2
                                     tabXY = BP.TTT(ti,:);
                                     TTTdropoff(socket,tabXY,tttapp);
-                                    table.type(6,5) = 1;
+                                    table.type(6,5) = deckE.type(xi);
                                     table.theta(6,5) = deckE.theta(xi);
                                     deckE.theta(xi) = NaN;
                                     
@@ -1843,8 +1857,10 @@ function Ass3GUI2RAPID()
                                     board(6,5) = 1;
                                     c(2) = 1;
                                     BPi  = sub2ind([9 9],6,5);
-                                    tablestate(listi,:) = [BPi table.type(6,5) tabXY table.theta(6,5)];
-                                    listi = listi + 1;
+                                    editRow = find(tablestate(:,1)==xi+200,1);
+                                    %change block BPs
+                                    tablestate(editRow,1) = BPi;
+                                    tablestate(editRow,3:4) = tabXY;
                                     tabapp.UITable.Data = tablestate;
                                     
                                     turn = 0;
@@ -1862,7 +1878,7 @@ function Ass3GUI2RAPID()
                                     ti = 3; % Cell 3
                                     tabXY = BP.TTT(ti,:);
                                     TTTdropoff(socket,tabXY,tttapp);
-                                    table.type(6,4) = 1;
+                                    table.type(6,4) = deckE.type(xi);
                                     table.theta(6,4) = deckE.theta(xi);
                                     deckE.theta(xi) = NaN;
                                     
@@ -1871,8 +1887,10 @@ function Ass3GUI2RAPID()
                                     board(6,4) = 1;
                                     c(3) = 1;
                                     BPi  = sub2ind([9 9],6,4);
-                                    tablestate(listi,:) = [BPi table.type(6,4) tabXY table.theta(6,4)];
-                                    listi = listi + 1;
+                                    editRow = find(tablestate(:,1)==xi+200,1);
+                                    %change block BPs
+                                    tablestate(editRow,1) = BPi;
+                                    tablestate(editRow,3:4) = tabXY;
                                     tabapp.UITable.Data = tablestate;
                                     
                                     turn = 0;
@@ -1890,7 +1908,7 @@ function Ass3GUI2RAPID()
                                     ti = 4; % Cell 4
                                     tabXY = BP.TTT(ti,:);
                                     TTTdropoff(socket,tabXY,tttapp);
-                                    table.type(5,6) = 1;
+                                    table.type(5,6) = deckE.type(xi);
                                     table.theta(5,6) = deckE.theta(xi);
                                     deckE.theta(xi) = NaN;
                                     
@@ -1899,8 +1917,10 @@ function Ass3GUI2RAPID()
                                     board(5,6) = 1;
                                     c(4) = 1;
                                     BPi  = sub2ind([9 9],5,6);
-                                    tablestate(listi,:) = [BPi table.type(5,6) tabXY table.theta(5,6)];
-                                    listi = listi + 1;
+                                    editRow = find(tablestate(:,1)==xi+200,1);
+                                    %change block BPs
+                                    tablestate(editRow,1) = BPi;
+                                    tablestate(editRow,3:4) = tabXY;
                                     tabapp.UITable.Data = tablestate;
                                     
                                     turn = 0;
@@ -1918,7 +1938,7 @@ function Ass3GUI2RAPID()
                                     ti = 5; % Cell 5
                                     tabXY = BP.TTT(ti,:);
                                     TTTdropoff(socket,tabXY,tttapp);
-                                    table.type(5,5) = 1;
+                                    table.type(5,5) = deckE.type(xi);
                                     table.theta(5,5) = deckE.theta(xi);
                                     deckE.theta(xi) = NaN;
                                     
@@ -1927,8 +1947,10 @@ function Ass3GUI2RAPID()
                                     board(5,5) = 1;
                                     c(5) = 1;
                                     BPi  = sub2ind([9 9],5,5);
-                                    tablestate(listi,:) = [BPi table.type(5,5) tabXY table.theta(5,5)];
-                                    listi = listi + 1;
+                                    editRow = find(tablestate(:,1)==xi+200,1);
+                                    %change block BPs
+                                    tablestate(editRow,1) = BPi;
+                                    tablestate(editRow,3:4) = tabXY;
                                     tabapp.UITable.Data = tablestate;
                                     
                                     turn = 0;
@@ -1946,7 +1968,7 @@ function Ass3GUI2RAPID()
                                     ti = 6; % Cell 6
                                     tabXY = BP.TTT(ti,:);
                                     TTTdropoff(socket,tabXY,tttapp);
-                                    table.type(5,4) = 1;
+                                    table.type(5,4) = deckE.type(xi);
                                     table.theta(5,4) = deckE.theta(xi);
                                     deckE.theta(xi) = NaN;
                                     
@@ -1955,8 +1977,10 @@ function Ass3GUI2RAPID()
                                     board(5,4) = 1;
                                     c(6) = 1;
                                     BPi  = sub2ind([9 9],5,4);
-                                    tablestate(listi,:) = [BPi table.type(5,4) tabXY table.theta(5,4)];
-                                    listi = listi + 1;
+                                    editRow = find(tablestate(:,1)==xi+200,1);
+                                    %change block BPs
+                                    tablestate(editRow,1) = BPi;
+                                    tablestate(editRow,3:4) = tabXY;
                                     tabapp.UITable.Data = tablestate;
                                     
                                     turn = 0;
@@ -1974,7 +1998,7 @@ function Ass3GUI2RAPID()
                                     ti = 7; % Cell 7
                                     tabXY = BP.TTT(ti,:);
                                     TTTdropoff(socket,tabXY,tttapp);
-                                    table.type(4,6) = 1;
+                                    table.type(4,6) = deckE.type(xi);
                                     table.theta(4,6) = deckE.theta(xi);
                                     deckE.theta(xi) = NaN;
                                     
@@ -1983,8 +2007,10 @@ function Ass3GUI2RAPID()
                                     board(4,6) = 1;
                                     c(7) = 1;
                                     BPi  = sub2ind([9 9],4,6);
-                                    tablestate(listi,:) = [BPi table.type(4,6) tabXY table.theta(4,6)];
-                                    listi = listi + 1;
+                                    editRow = find(tablestate(:,1)==xi+200,1);
+                                    %change block BPs
+                                    tablestate(editRow,1) = BPi;
+                                    tablestate(editRow,3:4) = tabXY;
                                     tabapp.UITable.Data = tablestate;
                                     
                                     turn = 0;
@@ -2002,7 +2028,7 @@ function Ass3GUI2RAPID()
                                     ti = 8; % Cell 8
                                     tabXY = BP.TTT(ti,:);
                                     TTTdropoff(socket,tabXY,tttapp);
-                                    table.type(4,5) = 1;
+                                    table.type(4,5) = deckE.type(xi);
                                     table.theta(4,5) = deckE.theta(xi);
                                     deckE.theta(xi) = NaN;
                                     
@@ -2011,8 +2037,10 @@ function Ass3GUI2RAPID()
                                     board(4,5) = 1;
                                     c(8) = 1;
                                     BPi  = sub2ind([9 9],4,5);
-                                    tablestate(listi,:) = [BPi table.type(4,5) tabXY table.theta(4,5)];
-                                    listi = listi + 1;
+                                    editRow = find(tablestate(:,1)==xi+200,1);
+                                    %change block BPs
+                                    tablestate(editRow,1) = BPi;
+                                    tablestate(editRow,3:4) = tabXY;
                                     tabapp.UITable.Data = tablestate;
                                     
                                     turn = 0;
@@ -2030,7 +2058,7 @@ function Ass3GUI2RAPID()
                                     ti = 9; % Cell 9
                                     tabXY = BP.TTT(ti,:);
                                     TTTdropoff(socket,tabXY,tttapp);
-                                    table.type(4,4) = 1;
+                                    table.type(4,4) = deckE.type(xi);
                                     table.theta(4,4) = deckE.theta(xi);
                                     deckE.theta(xi) = NaN;
                                     
@@ -2039,8 +2067,10 @@ function Ass3GUI2RAPID()
                                     board(4,4) = 1;
                                     c(9) = 1;
                                     BPi  = sub2ind([9 9],4,4);
-                                    tablestate(listi,:) = [BPi table.type(4,4) tabXY table.theta(4,4)];
-                                    listi = listi + 1;
+                                    editRow = find(tablestate(:,1)==xi+200,1);
+                                    %change block BPs
+                                    tablestate(editRow,1) = BPi;
+                                    tablestate(editRow,3:4) = tabXY;
                                     tabapp.UITable.Data = tablestate;
                                     
                                     turn = 0;
@@ -2077,9 +2107,6 @@ function Ass3GUI2RAPID()
                             BPi = sub2ind([9 9],(4-r)+3,(4-c)+3);
                             editRow = find(tablestate(:,1)==BPi,1);
                             tablestate(editRow,:) = [freeoi+100 table.type((4-r)+3,(4-c)+3) tabXY table.theta((4-r)+3,(4-c)+3)];
-                            if(listi ~= 1)
-                                listi = listi - 1;
-                            end
                             tabapp.UITable.Data = tablestate;
                             
                             table.type((4-r)+3,(4-c)+3) = NaN;
@@ -2108,9 +2135,6 @@ function Ass3GUI2RAPID()
                             BPi = sub2ind([9 9],(4-r)+3,(4-c)+3);
                             editRow = find(tablestate(:,1)==BPi,1);
                             tablestate(editRow,:) = [freexi+200 table.type((4-r)+3,(4-c)+3) tabXY table.theta((4-r)+3,(4-c)+3)];
-                            if(listi ~= 1)
-                                listi = listi - 1;
-                            end
                             tabapp.UITable.Data = tablestate;
                             
                             table.type((4-r)+3,(4-c)+3) = NaN;
@@ -2467,148 +2491,4 @@ function MovetoHomePositionButtonCommand(app,socket)
         str = ReceiveState(socket);  
         pause(0.01);
     end
-end
-
-function detectedBlocks(img)
-
-    tableImg = img;
-
-    for i = 1:250 
-        tableImg(i,:,1) = 255;
-        tableImg(i,:,2) = 255;
-        tableImg(i,:,3) = 255;
-    end
-    %colorThresholder(tableImg);
-
-    %figure(2);
-    %LetterImg = BWMask(tableImg);
-    LetterImg = Test2(tableImg);
-    %LetterImg = bwareaopen(LetterImg, 100);
-    %noGrid = bwareaopen(imopen(LetterImg,[0 1 1 0;0 1 1 0; 1 1 1 1;0 1 1 0; 0 1 1 0]),50); %Need to find tune this line
-    noGrid = bwareaopen(imopen(LetterImg,[0 1 1 0; 0 1 1 1;0 1 1 0; 1 1 1 0]),50);
-    %noGrid = bwareaopen(noGrid, 800);
-
-    filled = imfill(noGrid, 'holes');
-    %imshow(filled);
-    %imshowpair(LetterImg,filled,'montage');
-
-    bpt = regionprops(filled, 'Centroid', 'BoundingBox', 'Orientation', 'Area','Extrema');
-
-    %Colour Segmentation
-
-    BMT = blueM(tableImg);
-    YMT = yellowMask(tableImg);
-    GMT = greenMask2(tableImg);
-    PMT = purpleMask2(tableImg);
-    OMT = OrangeMask4(tableImg);
-    RMT = redMask(tableImg);
-
-    %colorThresholder(tableImg);
-    BMT = bwareaopen(BMT,200); %Need to change around
-    YMT = bwareaopen(YMT,200);
-    GMT = bwareaopen(GMT,200);
-    RMT = bwareaopen(RMT,200);
-    OMT = bwareaopen(OMT,200);
-    PMT = bwareaopen(PMT,200);
-
-    CMT = BMT + YMT + GMT + RMT + OMT + PMT;
-    CMT = imfill(CMT,'holes');
-    BWCMT = imbinarize(CMT);
-    cbt = regionprops(BWCMT,'Centroid','BoundingBox','Orientation','Area');
-
-    %Region Props printing
-    figure(3);
-    imshow(img);
-    hold on;
-
-    for i = 1:length(cbt)
-        BBS = cbt(i).BoundingBox;
-        rectangle('Position', [BBS(1),BBS(2),BBS(3),BBS(4)],'EdgeColor','r','LineWidth',2);
-
-        blockS(1,i) = cbt(i).Centroid(1);%Temp values to store region props in
-        blockS(2,i) = cbt(i).Centroid(2);
-        plot(blockS(1,i), blockS(2,i), 'ro');
-
-        hold on;
-    end
-
-    for k = 1 : length(bpt)
-        BBtable2 = bpt(k).BoundingBox;
-        bpt(k).Type = 1;
-        rectangle('Position', [BBtable2(1),BBtable2(2),BBtable2(3),BBtable2(4)],'EdgeColor','g','LineWidth',2) ;
-        block(1,k) = bpt(k).Centroid(1);%Temp values to store region props in
-        block(2,k) = bpt(k).Centroid(2);
-        plot(block(1,k), block(2,k), 'go');
-        hold on;
-    end
-
-    block = dataAssociation(block, blockS);
-
-end
-
-function block = dataAssociation(block, objCent)
-    mindist = 100000;
-    index = 0;
-    sizeblock = size(block);
-    sizeobj = size(objCent);
-    dist = [];
-    
-    if isempty(objCent)
-    else
-
-        for i = 1:sizeblock(1)
-            for j = 1:sizeobj(1)
-                dist(j) = sqrt((block(i,1)-objCent(j,1))^2 + (block(i,2)-objCent(j,2))^2);
-            end 
-
-            [mindist, index] = min(dist(:));
-            dist = [];
-            if (mindist ~= 100000)&&(mindist<15)
-               block(i,3) = 1;  
-               objCent(index,4) = 1;
-               mindist = 100000;
-            end
-        end
-
-        newBlocks = find(objCent(:,4) == 0);
-
-        for i = 1:length(newBlocks)
-            block(end+1,1) = objCent(newBlocks(i),1);
-            block(end,2) = objCent(newBlocks(i),2);
-            block(end,obj) = 1;
-        end
-
-    end
-
-end
-
-function [BW,maskedRGBImage] = Test2(RGB)
-
-    % Convert RGB image to chosen color space
-    I = rgb2ycbcr(RGB);
-
-    % Define thresholds for channel 1 based on histogram settings
-    channel1Min = 0.000;
-    channel1Max = 176.000;
-
-    % Define thresholds for channel 2 based on histogram settings
-    channel2Min = 0.000;
-    channel2Max = 255.000;
-
-    % Define thresholds for channel 3 based on histogram settings
-    channel3Min = 0.000;
-    channel3Max = 255.000;
-
-    % Create mask based on chosen histogram thresholds
-    sliderBW = (I(:,:,1) >= channel1Min ) & (I(:,:,1) <= channel1Max) & ...
-        (I(:,:,2) >= channel2Min ) & (I(:,:,2) <= channel2Max) & ...
-        (I(:,:,3) >= channel3Min ) & (I(:,:,3) <= channel3Max);
-    BW = sliderBW;
-
-    % Initialize output masked image based on input image.
-    maskedRGBImage = RGB;
-
-    % Set background pixels where BW is false to zero.
-    maskedRGBImage(repmat(~BW,[1 1 3])) = 0;
-
 end
