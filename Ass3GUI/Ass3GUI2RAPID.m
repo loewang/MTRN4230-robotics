@@ -56,6 +56,7 @@ function Ass3GUI2RAPID()
     table.theta = NaN(9,9);
     
     constate = [];
+    conv.BP = [];
     
     % camera setup
     load('cameraConveyorParams.mat'); %Load Conveyor camera calibration
@@ -547,7 +548,7 @@ function Ass3GUI2RAPID()
                            msg = sprintf('There is no block at %s',targetBP);
                            mvapp.StatusEditField_2.Value = msg;
                            pause(2);
-                       elseif(size(constate,1)==size(conv.XY,1))
+                       elseif(size(constate,1)==length(find(conv.BP==1)))
                            msg = 'Conveyor box full';
                            mvapp.StatusEditField_2.Value = msg;
                            pause(2);
@@ -700,7 +701,7 @@ function Ass3GUI2RAPID()
                            
                            %change block BPs
                            editRow = find(tablestate(:,1)==BPi,1);
-                           tablestate(editRow,5) = angle;
+                           tablestate(editRow,5) = table.theta(ri,ci)+angle;
                            tabapp.UITable.Data = tablestate;
                        end
                    end
@@ -721,68 +722,74 @@ function Ass3GUI2RAPID()
                 app.RobotReadyLamp.Color = 'r';
                 mvapp.RobotReadyLamp.Color = 'r';
                 
-                % check if Player 1
-                if(strcmp(mvapp.DropDown_2.Value, 'Player 1'))
-                    
-                    msg = 'Filling Player 1 deck';
+                if(isempty(conv.BP)||sum(conv.BP)<=6)
+                    msg = 'Not enough blocks in conveyor. Refill box';
                     mvapp.StatusEditField_3.Value = msg;
-                    
-                    BPi = find(deckW.state==0);
-                    emptyBP = BP.deckW(BPi,:);
-                    for i = 1:length(emptyBP)
-        
-                        filledi = find(conv.BP==1,1);
-                        conXY = constate(filledi,1:2);
-                        CONpickup(socket,conXY);
-                        conv.BP(filledi) = 0;
-                        
-                        tabXY = emptyBP(i,:);      
-                        BPdropoff(socket,tabXY); 
-                        deckW.state(i) = 1;
-                        
-                        deckW.type(BPi(i)) = constate(filledi,3);
-                        deckW.theta(BPi(i)) = constate(filledi,4);
-                        
-                        %add block to list
-                        tablestate(listi,:) = [BPi(i)+100 deckW.type(BPi(i)) tabXY deckW.theta(BPi(i))];
-                        listi = listi + 1;
-                        tabapp.UITable.Data = tablestate;
-                        
-                        if(mvapp.CANCELButtonPressed)
-                            mvapp.CANCELButtonPressed = 0;
-                            break;
-                        end
-                    end
-                    
-                % Player 2
+                    pause(2);
                 else
-                    msg = 'Filling Player 2 deck';
-                    mvapp.StatusEditField_3.Value = msg;
-                    
-                    BPi = find(deckE.state==0);
-                    emptyBP = BP.deckE(BPi,:);
-                    for i = 1:length(emptyBP)
+                    % check if Player 1
+                    if(strcmp(mvapp.DropDown_2.Value, 'Player 1'))
                         
-                        filledi = find(conv.BP==1,1);
-                        conXY = constate(filledi,1:2);
-                        CONpickup(socket,conXY);
-                        conv.BP(filledi) = 0;
+                        msg = 'Filling Player 1 deck';
+                        mvapp.StatusEditField_3.Value = msg;
                         
-                        tabXY = emptyBP(i,:);    
-                        BPdropoff(socket,tabXY); 
-                        deckE.state(i) = 1;
+                        BPi = find(deckW.state==0);
+                        emptyBP = BP.deckW(BPi,:);
+                        for i = 1:length(emptyBP)
+                            
+                            filledi = find(conv.BP==1,1);
+                            conXY = constate(filledi,1:2);
+                            CONpickup(socket,conXY);
+                            conv.BP(filledi) = 0;
+                            
+                            tabXY = emptyBP(i,:);
+                            BPdropoff(socket,tabXY);
+                            deckW.state(i) = 1;
+                            
+                            deckW.type(BPi(i)) = constate(filledi,4);
+                            deckW.theta(BPi(i)) = constate(filledi,3);
+                            
+                            %add block to list
+                            tablestate(listi,:) = [BPi(i)+100 deckW.type(BPi(i)) tabXY deckW.theta(BPi(i))];
+                            listi = listi + 1;
+                            tabapp.UITable.Data = tablestate;
+                            
+                            if(mvapp.CANCELButtonPressed)
+                                mvapp.CANCELButtonPressed = 0;
+                                break;
+                            end
+                        end
                         
-                        deckE.type(BPi(i)) = constate(filledi,3);
-                        deckE.theta(BPi(i)) = constate(filledi,4);
+                        % Player 2
+                    else
+                        msg = 'Filling Player 2 deck';
+                        mvapp.StatusEditField_3.Value = msg;
                         
-                        %add block to list
-                        tablestate(listi,:) = [BPi(i)+200 deckE.type(BPi(i)) tabXY deckE.theta(BPi(i))];
-                        listi = listi + 1;
-                        tabapp.UITable.Data = tablestate;
-                        
-                        if(mvapp.CANCELButtonPressed)
-                            mvapp.CANCELButtonPressed = 0;
-                            break;
+                        BPi = find(deckE.state==0);
+                        emptyBP = BP.deckE(BPi,:);
+                        for i = 1:length(emptyBP)
+                            
+                            filledi = find(conv.BP==1,1);
+                            conXY = constate(filledi,1:2);
+                            CONpickup(socket,conXY);
+                            conv.BP(filledi) = 0;
+                            
+                            tabXY = emptyBP(i,:);
+                            BPdropoff(socket,tabXY);
+                            deckE.state(i) = 1;
+                            
+                            deckE.type(BPi(i)) = constate(filledi,4);
+                            deckE.theta(BPi(i)) = constate(filledi,3);
+                            
+                            %add block to list
+                            tablestate(listi,:) = [BPi(i)+200 deckE.type(BPi(i)) tabXY deckE.theta(BPi(i))];
+                            listi = listi + 1;
+                            tabapp.UITable.Data = tablestate;
+                            
+                            if(mvapp.CANCELButtonPressed)
+                                mvapp.CANCELButtonPressed = 0;
+                                break;
+                            end
                         end
                     end
                 end
@@ -798,78 +805,82 @@ function Ass3GUI2RAPID()
                 app.RobotReadyLamp.Color = 'r';
                 mvapp.RobotReadyLamp.Color = 'r';
                 
-                % check if Player 1
-                if(strcmp(mvapp.DropDown_2.Value, 'Player 1'))
-                    
-                    msg = 'Discarding Player 1 deck';
+                if(size(constate,1)==length(find(conv.BP==1)))
+                    msg = 'Conveyor box full. Empty box';
                     mvapp.StatusEditField_3.Value = msg;
-                    
-                    BPi = find(deckW.state==1);
-                    filledBP = BP.deckW(BPi,:);
-                    
-                    for i = 1:length(filledBP)
-                        
-                        freei = find(conv.BP==0,1);
-                        conXY = constate(freei,1:2);
-                        CONdropoff(socket,conXY);
-                        conv.BP(freei) = 1;
-                        
-                        tabXY = filledBP(i,:);
-                        BPpickup(socket,tabXY);
-                        CONdropoff(socket,conXY);
-                        deckW.state(i) = 0;
-                        
-                        deckW.type(BPi(i)) = NaN;
-                        deckW.theta(BPi(i)) = NaN;
-                        
-                        %remove block from list
-                        editRow = find(tablestate(:,1)==BPi(i)+100,1);
-                        tablestate(editRow,:) = [];
-                        if(listi ~= 1)
-                            listi = listi - 1;
-                        end
-                        tabapp.UITable.Data = tablestate;
-                        
-                        if(mvapp.CANCELButtonPressed)
-                            mvapp.CANCELButtonPressed = 0;
-                            break;
-                        end
-                    end
-
-                % Player 2
+                    pause(2);
                 else
-                    msg = 'Discarding Player 2 deck';
-                    mvapp.StatusEditField_3.Value = msg;
-                    
-                    BPi = find(deckE.state==1);
-                    filledBP = BP.deckE(BPi,:);
-                    
-                    for i = 1:length(filledBP)
+                    % check if Player 1
+                    if(strcmp(mvapp.DropDown_2.Value, 'Player 1'))
                         
-                        freei = find(conv.BP==0,1);
-                        conXY = constate(freei,1:2);
-                        CONdropoff(socket,conXY);
-                        conv.BP(freei) = 1;
+                        msg = 'Discarding Player 1 deck';
+                        mvapp.StatusEditField_3.Value = msg;
                         
-                        tabXY = filledBP(i,:);
-                        BPpickup(socket,tabXY);
-                        CONdropoff(socket,conXY);
-                        deckE.state(i) = 0;
+                        BPi = find(deckW.state==1);
+                        filledBP = BP.deckW(BPi,:);
                         
-                        deckW.type(BPi(i)) = NaN;
-                        deckW.theta(BPi(i)) = NaN;
-                        
-                        %remove block from list
-                        editRow = find(tablestate(:,1)==BPi(i)+200,1);
-                        tablestate(editRow,:) = [];
-                        if(listi ~= 1)
-                            listi = listi - 1;
+                        for i = 1:length(filledBP)
+                            
+                            freei = find(conv.BP==0,1);
+                            conXY = constate(freei,1:2);
+                            
+                            tabXY = filledBP(i,:);
+                            BPpickup(socket,tabXY);
+                            CONdropoff(socket,conXY);
+                            conv.BP(freei) = 1;
+                            deckW.state(i) = 0;
+                            
+                            deckW.type(BPi(i)) = NaN;
+                            deckW.theta(BPi(i)) = NaN;
+                            
+                            %remove block from list
+                            editRow = find(tablestate(:,1)==BPi(i)+100,1);
+                            tablestate(editRow,:) = [];
+                            if(listi ~= 1)
+                                listi = listi - 1;
+                            end
+                            tabapp.UITable.Data = tablestate;
+                            
+                            if(mvapp.CANCELButtonPressed)
+                                mvapp.CANCELButtonPressed = 0;
+                                break;
+                            end
                         end
-                        tabapp.UITable.Data = tablestate;
                         
-                        if(mvapp.CANCELButtonPressed)
-                            mvapp.CANCELButtonPressed = 0;
-                            break;
+                        % Player 2
+                    else
+                        msg = 'Discarding Player 2 deck';
+                        mvapp.StatusEditField_3.Value = msg;
+                        
+                        BPi = find(deckE.state==1);
+                        filledBP = BP.deckE(BPi,:);
+                        
+                        for i = 1:length(filledBP)
+                            
+                            freei = find(conv.BP==0,1);
+                            conXY = constate(freei,1:2);
+                            
+                            tabXY = filledBP(i,:);
+                            BPpickup(socket,tabXY);
+                            CONdropoff(socket,conXY);
+                            conv.BP(freei) = 1;
+                            deckE.state(i) = 0;
+                            
+                            deckW.type(BPi(i)) = NaN;
+                            deckW.theta(BPi(i)) = NaN;
+                            
+                            %remove block from list
+                            editRow = find(tablestate(:,1)==BPi(i)+200,1);
+                            tablestate(editRow,:) = [];
+                            if(listi ~= 1)
+                                listi = listi - 1;
+                            end
+                            tabapp.UITable.Data = tablestate;
+                            
+                            if(mvapp.CANCELButtonPressed)
+                                mvapp.CANCELButtonPressed = 0;
+                                break;
+                            end
                         end
                     end
                 end
@@ -914,6 +925,9 @@ function Ass3GUI2RAPID()
                         %place correct block into deck
                         BPdropoff(socket,tabXY);
                         deckE.type(i) = 0;
+                        temptheta = deckE.theta(i);
+                        deckE.theta(i) = deckW.theta(letteri);
+                        deckW.theta(letteri) = temptheta;
                         
                         %replace correct block in other deck
                         BPpickup(socket,tempXY);
@@ -925,12 +939,14 @@ function Ass3GUI2RAPID()
                         editRow = find(tablestate(:,1)==i+200,1);
                         %tablestate(editRow,:) = [i+200 1 BP.deckE(i,:) 90];
                         tablestate(editRow,2) = 1;
+                        tablestate(editRow,5) = deckE.theta(i);
                         tabapp.UITable.Data = tablestate;
                         
                         %update block BPs
                         editRow = find(tablestate(:,1)==letteri+100,1);
                         %tablestate(editRow,:) = [letteri+100 0 BP.deckW(letteri,:) 90];
                         tablestate(editRow,2) = 0;
+                        tablestate(editRow,5) = deckW.theta(letteri);
                         tabapp.UITable.Data = tablestate;
                         
                         if(mvapp.CANCELButtonPressed)
@@ -999,7 +1015,7 @@ function Ass3GUI2RAPID()
 
                     %change block BPs
                     editRow = find(tablestate(:,1)==deckBPi(i)+200,1);
-                    tablestate(editRow,:) = [deckBPi(i)+200 table.type(ex,ey) tabXY table.theta(ex,ey)];
+                    tablestate(editRow,:) = [freeBPi table.type(ex,ey) tabXY table.theta(ex,ey)];
                     tabapp.UITable.Data = tablestate;
                 end
                 
@@ -1025,7 +1041,7 @@ function Ass3GUI2RAPID()
                     
                     %change block BPs
                     editRow = find(tablestate(:,1)==deckBPi(i)+100,1);
-                    tablestate(editRow,:) = [deckBPi(i)+100 table.type(ex,ey) tabXY table.theta(ex,ey)];
+                    tablestate(editRow,:) = [freeBPi table.type(ex,ey) tabXY table.theta(ex,ey)];
                     tabapp.UITable.Data = tablestate;
                 end
                 mvapp.TableFILLButtonPressed = 0;
@@ -1175,7 +1191,7 @@ function Ass3GUI2RAPID()
                                 board(6,5) = 1;
                                 c(2) = 1;
                                 BPi  = sub2ind([9 9],6,5);
-                                tablestate(listi,:) = [BPi 1 tabXY 90];
+                                tablestate(listi,:) = [BPi table.type(6,5) tabXY table.theta(6,5)];
                                 listi = listi + 1;
                                 tabapp.UITable.Data = tablestate;
                             end
@@ -1212,7 +1228,7 @@ function Ass3GUI2RAPID()
                                 board(6,4) = 1;
                                 c(3) = 1;
                                 BPi  = sub2ind([9 9],6,4);
-                                tablestate(listi,:) = [BPi 1 tabXY 90];
+                                tablestate(listi,:) = [BPi table.type(6,4) tabXY table.theta(6,4)];
                                 listi = listi + 1;
                                 tabapp.UITable.Data = tablestate;
                             end
@@ -1249,7 +1265,7 @@ function Ass3GUI2RAPID()
                                 board(5,6) = 1;
                                 c(4) = 1;
                                 BPi  = sub2ind([9 9],5,6);
-                                tablestate(listi,:) = [BPi 1 tabXY 90];
+                                tablestate(listi,:) = [BPi table.type(5,6) tabXY table.theta(5,6)];
                                 listi = listi + 1;
                                 tabapp.UITable.Data = tablestate;
                             end
@@ -1286,7 +1302,7 @@ function Ass3GUI2RAPID()
                                 board(5,5) = 1;
                                 c(5) = 1;
                                 BPi  = sub2ind([9 9],5,5);
-                                tablestate(listi,:) = [BPi 1 tabXY 90];
+                                tablestate(listi,:) = [BPi table.type(5,5) tabXY table.theta(5,5)];
                                 listi = listi + 1;
                                 tabapp.UITable.Data = tablestate;
                             end
@@ -1323,7 +1339,7 @@ function Ass3GUI2RAPID()
                                 board(5,4) = 1;
                                 c(6) = 1;
                                 BPi  = sub2ind([9 9],5,4);
-                                tablestate(listi,:) = [BPi 1 tabXY 90];
+                                tablestate(listi,:) = [BPi table.type(5,4) tabXY table.theta(5,4)];
                                 listi = listi + 1;
                                 tabapp.UITable.Data = tablestate;
                             end
@@ -1360,7 +1376,7 @@ function Ass3GUI2RAPID()
                                 board(4,6) = 1;
                                 c(7) = 1;
                                 BPi  = sub2ind([9 9],4,6);
-                                tablestate(listi,:) = [BPi 1 tabXY 90];
+                                tablestate(listi,:) = [BPi table.type(4,6) tabXY table.theta(4,6)];
                                 listi = listi + 1;
                                 tabapp.UITable.Data = tablestate;
                             end
@@ -1397,7 +1413,7 @@ function Ass3GUI2RAPID()
                                 board(4,5) = 1;
                                 c(8) = 1;
                                 BPi  = sub2ind([9 9],4,5);
-                                tablestate(listi,:) = [BPi 1 tabXY 90];
+                                tablestate(listi,:) = [BPi table.type(4,5) tabXY table.theta(4,5)];
                                 listi = listi + 1;
                                 tabapp.UITable.Data = tablestate;
                             end
@@ -1434,7 +1450,7 @@ function Ass3GUI2RAPID()
                                 board(4,4) = 1;
                                 c(9) = 1;
                                 BPi  = sub2ind([9 9],4,4);
-                                tablestate(listi,:) = [BPi 1 tabXY 90];
+                                tablestate(listi,:) = [BPi table.type(4,4) tabXY table.theta(4,4)];
                                 listi = listi + 1;
                                 tabapp.UITable.Data = tablestate;
                             end
@@ -1467,11 +1483,14 @@ function Ass3GUI2RAPID()
                             %remove block from list
                             BPi = sub2ind([9 9],(4-r)+3,(4-c)+3);
                             editRow = find(tablestate(:,1)==BPi,1);
-                            tablestate(editRow,:) = [];
+                            tablestate(editRow,:) = [freeoi+100 table.type((4-r)+3,(4-c)+3) tabXY table.theta((4-r)+3,(4-c)+3)];
                             if(listi ~= 1)
                                 listi = listi - 1;
                             end
                             tabapp.UITable.Data = tablestate;
+                            
+                            table.type((4-r)+3,(4-c)+3) = NaN;
+                            table.theta((4-r)+3,(4-c)+3) = NaN;
                         end
                     end
                     
@@ -1495,11 +1514,14 @@ function Ass3GUI2RAPID()
                             %remove block from list
                             BPi = sub2ind([9 9],(4-r)+3,(4-c)+3);
                             editRow = find(tablestate(:,1)==BPi,1);
-                            tablestate(editRow,:) = [];
+                            tablestate(editRow,:) = [freexi+200 table.type((4-r)+3,(4-c)+3) tabXY table.theta((4-r)+3,(4-c)+3)];
                             if(listi ~= 1)
                                 listi = listi - 1;
                             end
                             tabapp.UITable.Data = tablestate;
+                            
+                            table.type((4-r)+3,(4-c)+3) = NaN;
+                            table.theta((4-r)+3,(4-c)+3) = NaN;
                         end
                     end
                     
@@ -1671,18 +1693,21 @@ function Ass3GUI2RAPID()
                                 tabXY = BP.deckW(oi,:);
                                 TTTpickup(socket,tabXY,tttapp);
                                 deckW.state(oi) = 0;
+                                deckW.type(oi) = NaN;
                                 ti = bestMove;
                                 tabXY = BP.TTT(ti,:);
                                 TTTdropoff(socket,tabXY,tttapp);
-                                
+
                                 [ri,ci] = ind2sub([3 3],ti);
                                 table.type((4-ri)+3,(4-ci)+3) = 0;
                                 
                                 board((4-ri)+3,(4-ci)+3) = 1;
+                                table.theta((4-ri)+3,(4-ci)+3) = deckE.theta(xi);
+                                deckE.theta(xi) = NaN;
                                 turn = 1;
                                 
                                 BPi  = sub2ind([9 9],(4-ri)+3,(4-ci)+3) ;
-                                tablestate(listi,:) = [BPi 0 tabXY 90];
+                                tablestate(listi,:) = [BPi table.type((4-ri)+3,(4-ci)+3) tabXY table.theta((4-ri)+3,(4-ci)+3)];
                                 listi = listi + 1;
                                 tabapp.UITable.Data = tablestate;
                                 
@@ -1738,19 +1763,22 @@ function Ass3GUI2RAPID()
                                     tabXY = BP.deckE(xi,:);
                                     TTTpickup(socket,tabXY,tttapp);
                                     deckE.state(xi) = 0;
+                                    deckE.type(xi) = NaN;
                                     
                                     % Now move the block into Cell 1 Position
                                     ti = 1; % Cell 1
                                     tabXY = BP.TTT(ti,:);
                                     TTTdropoff(socket,tabXY,tttapp);
                                     table.type(6,6) = 1;
+                                    table.theta(6,6) = deckE.theta(xi);
+                                    deckE.theta(xi) = NaN;
                                     
                                     boardState{1} = 'X';
                                     
                                     board(6,6) = 1;
                                     c(1) = 1;
                                     BPi  = sub2ind([9 9],6,6);
-                                    tablestate(listi,:) = [BPi 1 tabXY 90];
+                                    tablestate(listi,:) = [BPi table.type(6,6) tabXY table.theta(6,6)];
                                     listi = listi + 1;
                                     tabapp.UITable.Data = tablestate;
                                     
@@ -1764,17 +1792,21 @@ function Ass3GUI2RAPID()
                                     tabXY = BP.deckE(xi,:);
                                     TTTpickup(socket,tabXY,tttapp);
                                     deckE.state(xi) = 0;
+                                    deckE.type(xi) = NaN;
+                                    
                                     ti = 2; % Cell 2
                                     tabXY = BP.TTT(ti,:);
                                     TTTdropoff(socket,tabXY,tttapp);
                                     table.type(6,5) = 1;
+                                    table.theta(6,5) = deckE.theta(xi);
+                                    deckE.theta(xi) = NaN;
                                     
                                     boardState{2} = 'X';
                                     
                                     board(6,5) = 1;
                                     c(2) = 1;
                                     BPi  = sub2ind([9 9],6,5);
-                                    tablestate(listi,:) = [BPi 1 tabXY 90];
+                                    tablestate(listi,:) = [BPi table.type(6,5) tabXY table.theta(6,5)];
                                     listi = listi + 1;
                                     tabapp.UITable.Data = tablestate;
                                     
@@ -1788,17 +1820,21 @@ function Ass3GUI2RAPID()
                                     tabXY = BP.deckE(xi,:);
                                     TTTpickup(socket,tabXY,tttapp);
                                     deckE.state(xi) = 0;
+                                    deckE.type(xi) = NaN;
+                                    
                                     ti = 3; % Cell 3
                                     tabXY = BP.TTT(ti,:);
                                     TTTdropoff(socket,tabXY,tttapp);
                                     table.type(6,4) = 1;
+                                    table.theta(6,4) = deckE.theta(xi);
+                                    deckE.theta(xi) = NaN;
                                     
                                     boardState{3} = 'X';
                                     
                                     board(6,4) = 1;
                                     c(3) = 1;
                                     BPi  = sub2ind([9 9],6,4);
-                                    tablestate(listi,:) = [BPi 1 tabXY 90];
+                                    tablestate(listi,:) = [BPi table.type(6,4) tabXY table.theta(6,4)];
                                     listi = listi + 1;
                                     tabapp.UITable.Data = tablestate;
                                     
@@ -1812,17 +1848,21 @@ function Ass3GUI2RAPID()
                                     tabXY = BP.deckE(xi,:);
                                     TTTpickup(socket,tabXY,tttapp);
                                     deckE.state(xi) = 0;
+                                    deckE.type(xi) = NaN;
+                                    
                                     ti = 4; % Cell 4
                                     tabXY = BP.TTT(ti,:);
                                     TTTdropoff(socket,tabXY,tttapp);
                                     table.type(5,6) = 1;
+                                    table.theta(5,6) = deckE.theta(xi);
+                                    deckE.theta(xi) = NaN;
                                     
                                     boardState{4} = 'X';
                                     
                                     board(5,6) = 1;
                                     c(4) = 1;
                                     BPi  = sub2ind([9 9],5,6);
-                                    tablestate(listi,:) = [BPi 1 tabXY 90];
+                                    tablestate(listi,:) = [BPi table.type(5,6) tabXY table.theta(5,6)];
                                     listi = listi + 1;
                                     tabapp.UITable.Data = tablestate;
                                     
@@ -1836,17 +1876,21 @@ function Ass3GUI2RAPID()
                                     tabXY = BP.deckE(xi,:);
                                     BPpickup(socket,tabXY);
                                     deckE.state(xi) = 0;
+                                    deckE.type(xi) = NaN;
+                                    
                                     ti = 5; % Cell 5
                                     tabXY = BP.TTT(ti,:);
                                     TTTdropoff(socket,tabXY,tttapp);
                                     table.type(5,5) = 1;
+                                    table.theta(5,5) = deckE.theta(xi);
+                                    deckE.theta(xi) = NaN;
                                     
                                     boardState{5} = 'X';
                                     
                                     board(5,5) = 1;
                                     c(5) = 1;
                                     BPi  = sub2ind([9 9],5,5);
-                                    tablestate(listi,:) = [BPi 1 tabXY 90];
+                                    tablestate(listi,:) = [BPi table.type(5,5) tabXY table.theta(5,5)];
                                     listi = listi + 1;
                                     tabapp.UITable.Data = tablestate;
                                     
@@ -1860,17 +1904,21 @@ function Ass3GUI2RAPID()
                                     tabXY = BP.deckE(xi,:);
                                     TTTpickup(socket,tabXY,tttapp);
                                     deckE.state(xi) = 0;
+                                    deckE.type(xi) = NaN;
+                                    
                                     ti = 6; % Cell 6
                                     tabXY = BP.TTT(ti,:);
                                     TTTdropoff(socket,tabXY,tttapp);
                                     table.type(5,4) = 1;
+                                    table.theta(5,4) = deckE.theta(xi);
+                                    deckE.theta(xi) = NaN;
                                     
                                     boardState{6} = 'X';
                                     
                                     board(5,4) = 1;
                                     c(6) = 1;
                                     BPi  = sub2ind([9 9],5,4);
-                                    tablestate(listi,:) = [BPi 1 tabXY 90];
+                                    tablestate(listi,:) = [BPi table.type(5,4) tabXY table.theta(5,4)];
                                     listi = listi + 1;
                                     tabapp.UITable.Data = tablestate;
                                     
@@ -1884,17 +1932,21 @@ function Ass3GUI2RAPID()
                                     tabXY = BP.deckE(xi,:);
                                     TTTpickup(socket,tabXY,tttapp);
                                     deckE.state(xi) = 0;
+                                    deckE.type(xi) = NaN;
+                                    
                                     ti = 7; % Cell 7
                                     tabXY = BP.TTT(ti,:);
                                     TTTdropoff(socket,tabXY,tttapp);
                                     table.type(4,6) = 1;
+                                    table.theta(4,6) = deckE.theta(xi);
+                                    deckE.theta(xi) = NaN;
                                     
                                     boardState{7} = 'X';
                                     
                                     board(4,6) = 1;
                                     c(7) = 1;
                                     BPi  = sub2ind([9 9],4,6);
-                                    tablestate(listi,:) = [BPi 1 tabXY 90];
+                                    tablestate(listi,:) = [BPi table.type(4,6) tabXY table.theta(4,6)];
                                     listi = listi + 1;
                                     tabapp.UITable.Data = tablestate;
                                     
@@ -1908,17 +1960,21 @@ function Ass3GUI2RAPID()
                                     tabXY = BP.deckE(xi,:);
                                     TTTpickup(socket,tabXY,tttapp);
                                     deckE.state(xi) = 0;
+                                    deckE.type(xi) = NaN;
+                                    
                                     ti = 8; % Cell 8
                                     tabXY = BP.TTT(ti,:);
                                     TTTdropoff(socket,tabXY,tttapp);
                                     table.type(4,5) = 1;
+                                    table.theta(4,5) = deckE.theta(xi);
+                                    deckE.theta(xi) = NaN;
                                     
                                     boardState{8} = 'X';
                                     
                                     board(4,5) = 1;
                                     c(8) = 1;
                                     BPi  = sub2ind([9 9],4,5);
-                                    tablestate(listi,:) = [BPi 1 tabXY 90];
+                                    tablestate(listi,:) = [BPi table.type(4,5) tabXY table.theta(4,5)];
                                     listi = listi + 1;
                                     tabapp.UITable.Data = tablestate;
                                     
@@ -1932,17 +1988,21 @@ function Ass3GUI2RAPID()
                                     tabXY = BP.deckE(xi,:);
                                     TTTpickup(socket,tabXY,tttapp);
                                     deckE.state(xi) = 0;
+                                    deckE.type(xi) = NaN;
+                                    
                                     ti = 9; % Cell 9
                                     tabXY = BP.TTT(ti,:);
                                     TTTdropoff(socket,tabXY,tttapp);
                                     table.type(4,4) = 1;
+                                    table.theta(4,4) = deckE.theta(xi);
+                                    deckE.theta(xi) = NaN;
                                     
                                     boardState{9} = 'X';
                                     
                                     board(4,4) = 1;
                                     c(9) = 1;
                                     BPi  = sub2ind([9 9],4,4);
-                                    tablestate(listi,:) = [BPi 1 tabXY 90];
+                                    tablestate(listi,:) = [BPi table.type(4,4) tabXY table.theta(4,4)];
                                     listi = listi + 1;
                                     tabapp.UITable.Data = tablestate;
                                     
@@ -1980,11 +2040,14 @@ function Ass3GUI2RAPID()
                         %remove block from list
                         BPi = sub2ind([9 9],(4-r)+3,(4-c)+3);
                         editRow = find(tablestate(:,1)==BPi,1);
-                        tablestate(editRow,:) = [];
+                        tablestate(editRow,:) = [freeoi+100 table.type((4-r)+3,(4-c)+3) tabXY table.theta((4-r)+3,(4-c)+3)];
                         if(listi ~= 1)
                             listi = listi - 1;
                         end
                         tabapp.UITable.Data = tablestate;
+                        
+                        table.type((4-r)+3,(4-c)+3) = NaN;
+                        table.theta((4-r)+3,(4-c)+3) = NaN;
                     end
                 end
                 
@@ -2008,11 +2071,14 @@ function Ass3GUI2RAPID()
                         %remove block from list
                         BPi = sub2ind([9 9],(4-r)+3,(4-c)+3);
                         editRow = find(tablestate(:,1)==BPi,1);
-                        tablestate(editRow,:) = [];
+                        tablestate(editRow,:) = [freexi+200 table.type((4-r)+3,(4-c)+3) tabXY table.theta((4-r)+3,(4-c)+3)];
                         if(listi ~= 1)
                             listi = listi - 1;
                         end
                         tabapp.UITable.Data = tablestate;
+                        
+                        table.type((4-r)+3,(4-c)+3) = NaN;
+                        table.theta((4-r)+3,(4-c)+3) = NaN;
                     end
                 end
                 tttapp.delete;
