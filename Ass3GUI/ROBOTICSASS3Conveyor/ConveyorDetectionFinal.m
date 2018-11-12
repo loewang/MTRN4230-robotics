@@ -37,9 +37,9 @@ function [CBData] = ConveyorImageProcess(img,cameraConveyorParams,R,t)
     filterimg = bwareaopen(BITimg, 100);
     binaryImage = imfill(filterimg, 'holes');
 
-    figure(7);
-    imshow(binaryImage);
-    hold on;
+%     figure(7);
+%     imshow(binaryImage);
+%     hold on;
 
     %Large Bounding Box
     blockprops = regionprops(binaryImage, 'Centroid', 'BoundingBox', 'Orientation', 'Area','Extrema');
@@ -52,9 +52,9 @@ function [CBData] = ConveyorImageProcess(img,cameraConveyorParams,R,t)
 
     blockprops2 = regionprops(LetterImg, 'Centroid', 'BoundingBox', 'Orientation', 'Area','Extrema');
      
-    figure(8);
-    imshow(LetterImg);
-    hold on;
+%     figure(8);
+%     imshow(LetterImg);
+%     hold on;
 
     %New Masks
     BM = blueMaskT(robot);
