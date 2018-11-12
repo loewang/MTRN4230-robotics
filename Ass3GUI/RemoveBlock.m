@@ -1,9 +1,10 @@
 %RemoveBlockCode
-function blockRemove = RemoveBlock(blockData,img)
+function blockRemove = RemoveBlock(blockData,img,UIaxes)
     blockRemove = [];
     imshow(img);
     hold on;
     [x,y] = ginput(1);
+    hold off;
     
     counter = 1;
     for i = 1:length(blockData(:,1))
@@ -26,17 +27,16 @@ function blockRemove = RemoveBlock(blockData,img)
 
     img = insertText(img,blockRemove(:,1:2),text_str,'FontSize',18,'BoxColor','red','BoxOpacity',1,'TextColor','white');
 
-    figure(2)
-    imshow(img);
-    hold on;
+    imshow(img,'Parent',UIaxes);
+    hold(UIaxes, 'on');
+    pan(UIaxes,'on');
+    zoom(UIaxes,'on');
 
     for  j = 1:length(blockRemove(:,1))
         if blockRemove(j,3)==1
-            plot(blockRemove(j,1), blockRemove(j,2), 'r*');
-            hold on;
+            plot(UIaxes,blockRemove(j,1), blockRemove(j,2), 'r*');           
         else
-            plot(blockRemove(j,1), blockRemove(j,2), 'g*');
-            hold on;
+            plot(UIaxes,blockRemove(j,1), blockRemove(j,2), 'g*');
         end
     end
 end

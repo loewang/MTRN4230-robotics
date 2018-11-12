@@ -63,8 +63,8 @@ function Ass3GUI2RAPID()
     load('RotationMatrix.mat');
     load('TranslationMatrix.mat');
     
-    %clear table images
-    tabImg = imageDatastore('clear table images');
+%     %clear table images
+%     tabImg = imageDatastore('clear table images');
     
 %     robot_IP_address = '192.168.125.1';
     robot_IP_address = '127.0.0.1'; % Simulation ip address
@@ -518,8 +518,8 @@ function Ass3GUI2RAPID()
                 % preview(vid2);
                 % img = getsnapshot(vid2);
                 img = imread('table_img_10_03_11_59_57.jpg');
-                table.XY = TableImageProcess(img)';
-                tablestate = [NaN(size(table.XY,1),2) table.XY NaN(size(table.XY,1),1)];
+                tabledata = tableDetect(img,tabapp.UIAxes);
+                tablestate = [NaN(size(tabledata,1),1) tabledata(:,3) tabledata(:,5:6) tabledata(:,4)];
                 tabapp.UITable.Data = tablestate;
                 tabapp.UpdateImageButtonPressed = 0;
             end
@@ -981,10 +981,29 @@ function Ass3GUI2RAPID()
                     tabXY = scatteredBP(i,:);
                     BPpickup(socket,tabXY);
                     
-                    freei = find(conv.BP==0,1);
-                    conXY = constate(freei,1:2);
-                    CONdropoff(socket,conXY);
-                    conv.BP(freei) = 1;
+%                     freei = find(conv.BP==0,1);
+%                     conXY = constate(freei,1:2);
+%                     CONdropoff(socket,conXY);
+%                     conv.BP(freei) = 1;
+                    cmd = 'MVPOSCON 0,0,200';
+                    fwrite(socket,cmd);
+                    disp(cmd);
+                    WaitForReady(socket);
+
+                    cmd = 'SETSOLEN 0';
+                    fwrite(socket,cmd);
+                    disp(cmd);
+                    pause(0.1);
+
+                    cmd = 'VACUUMOF';
+                    fwrite(socket,cmd);
+                    disp(cmd);
+                    pause(0.1);
+
+                    cmd = 'MVPOSTAB 0,0,14';
+                    fwrite(socket,cmd);
+                    disp(cmd);
+                    WaitForReady(socket);
                 end
                 
                 
@@ -1061,14 +1080,41 @@ function Ass3GUI2RAPID()
                     tablestate = tabapp.UITable.Data;
                     
                     board = zeros(9,9);
-                    board(tablestate(:,1)) = 1;
+                    gridi = tablestate(:,1)<82;
+                    dWi = tablestate(:,1)>82 && tablestate(:,1)<107;
+                    dEi = tablestate(:,1)>107 && tablestate(:,1)<207;
                     
-                    table.type(tablestate(:,1)) = tablestate(:,2);
+                    deckWi = tablestate(dWi)-100;
+                    deckEi = tablestate(dEi)-200;
                     
-                    table.theta(tablestate(:,1)) = tablestate(:,5);
+                    board(tablestate(gridi,1)) = 1;
                     
+                    table.type(tablestate(gridi,1)) = tablestate(gridi,2);
+                    table.theta(tablestate(gridi,1)) = tablestate(gridi,5);
+                    
+                    deckW.type(deckWi) = tablestate(dWi,2);
+                    deckE.type(deckEi) = tablestate(dEi,2);
+                    
+                    deckW.theta(deckWi) = tablestate(dWi,5);
+                    deckE.theta(deckEi) = tablestate(dEi,5);
                 end
                 tabapp.EDITButtonPressed = 0;
+            end
+            
+            if(tabapp.ADDButtonPressed)
+                tabapp.ADDButtonPressed = 0;
+            end
+            
+            if(tabapp.DELETEButtonPressed)
+                % vid2 = videoinput('winvideo', 2, 'MJPG_1600x1200');
+                % preview(vid2);
+                % img = getsnapshot(vid2);
+                img = imread('table_img_10_03_11_59_57.jpg');
+                tabledata = RemoveBlock(tabledata,img,tabapp.UIAxes);
+                tablestate = [NaN(size(tabledata,1),1) tabledata(:,3) tabledata(:,5:6) tabledata(:,4)];
+                tabapp.UITable.Data = tablestate;
+
+                tabapp.DELETEButtonPressed = 0;
             end
             
             %Path Planning-------------------------------------------------
@@ -1133,8 +1179,7 @@ function Ass3GUI2RAPID()
                                     tabXY = BP.deckW(oi,:);
                                     TTTpickup(socket,tabXY,tttapp);
                                     deckW.state(oi) = 0;
-                                    deckW.type(oi) = NaN;
-                                    
+
                                     % Now move the block into Cell 1 Position
                                     ti = 1; % Cell 1
                                     tabXY = BP.TTT(ti,:);
@@ -1142,15 +1187,14 @@ function Ass3GUI2RAPID()
                                     table.type(6,6) = deckW.type(oi);
                                     table.theta(6,6) = deckW.theta(oi);
                                     deckW.theta(oi) = NaN;
-                                    
+                                    deckW.type(oi) = NaN;
                                     editRow = find(tablestate(:,1)==oi+100,1);
                                 else
                                     xi = find(deckE.state==1,1);
                                     tabXY = BP.deckE(xi,:);
                                     TTTpickup(socket,tabXY,tttapp);
                                     deckE.state(xi) = 0;
-                                    deckE.type(xi) = NaN;
-                                    
+
                                     % Now move the block into Cell 1 Position
                                     ti = 1; % Cell 1
                                     tabXY = BP.TTT(ti,:);
@@ -1158,7 +1202,7 @@ function Ass3GUI2RAPID()
                                     table.type(6,6) = deckE.type(xi);
                                     table.theta(6,6) = deckE.theta(xi);
                                     deckE.theta(xi) = NaN;
-                                    
+                                    deckE.type(xi) = NaN;
                                     editRow = find(tablestate(:,1)==xi+200,1);
                                 end
                                 board(6,6) = 1;
@@ -1178,7 +1222,6 @@ function Ass3GUI2RAPID()
                                     tabXY = BP.deckW(oi,:);
                                     TTTpickup(socket,tabXY,tttapp);
                                     deckW.state(oi) = 0;
-                                    deckW.type(oi) = NaN;
                                     
                                     ti = 2; % Cell 2
                                     tabXY = BP.TTT(ti,:);
@@ -1186,14 +1229,13 @@ function Ass3GUI2RAPID()
                                     table.type(6,5) = deckW.type(oi);
                                     table.theta(6,5) = deckW.theta(oi);
                                     deckW.theta(oi) = NaN;
-                                    
+                                    deckW.type(oi) = NaN;
                                     editRow = find(tablestate(:,1)==oi+100,1);
                                 else
                                     xi = find(deckE.state==1,1);
                                     tabXY = BP.deckE(xi,:);
                                     TTTpickup(socket,tabXY,tttapp);
-                                    deckE.state(xi) = 0;
-                                    deckE.type(xi) = NaN;
+                                    deckE.state(xi) = 0;   
                                     
                                     ti = 2; % Cell 2
                                     tabXY = BP.TTT(ti,:);
@@ -1201,7 +1243,7 @@ function Ass3GUI2RAPID()
                                     table.type(6,5) = deckE.type(xi);
                                     table.theta(6,5) = deckE.theta(xi);
                                     deckE.theta(xi) = NaN;
-                                    
+                                    deckE.type(xi) = NaN;
                                     editRow = find(tablestate(:,1)==xi+200,1);
                                 end
                                 board(6,5) = 1;
@@ -1219,8 +1261,7 @@ function Ass3GUI2RAPID()
                                     oi = find(deckW.state==1,1);
                                     tabXY = BP.deckW(oi,:);
                                     TTTpickup(socket,tabXY,tttapp);
-                                    deckW.state(oi) = 0;
-                                    deckW.type(oi) = NaN;
+                                    deckW.state(oi) = 0;                                    
                                     
                                     ti = 3; % Cell 3
                                     tabXY = BP.TTT(ti,:);
@@ -1228,14 +1269,13 @@ function Ass3GUI2RAPID()
                                     table.type(6,4) = deckW.type(oi);
                                     table.theta(6,4) = deckW.theta(oi);
                                     deckW.theta(oi) = NaN;
-                                    
+                                    deckW.type(oi) = NaN;
                                     editRow = find(tablestate(:,1)==oi+100,1);
                                 else
                                     xi = find(deckE.state==1,1);
                                     tabXY = BP.deckE(xi,:);
                                     TTTpickup(socket,tabXY,tttapp);
-                                    deckE.state(xi) = 0;
-                                    deckE.type(xi) = NaN;
+                                    deckE.state(xi) = 0;      
                                     
                                     ti = 3; % Cell 3
                                     tabXY = BP.TTT(ti,:);
@@ -1243,7 +1283,7 @@ function Ass3GUI2RAPID()
                                     table.type(6,4) = deckE.type(xi);
                                     table.theta(6,4) = deckE.theta(xi);
                                     deckE.theta(xi) = NaN;
-                                    
+                                    deckE.type(xi) = NaN;
                                     editRow = find(tablestate(:,1)==xi+200,1);
                                 end
                                 board(6,4) = 1;
@@ -1261,8 +1301,7 @@ function Ass3GUI2RAPID()
                                     oi = find(deckW.state==1,1);
                                     tabXY = BP.deckW(oi,:);
                                     TTTpickup(socket,tabXY,tttapp);
-                                    deckW.state(oi) = 0;
-                                    deckW.type(oi) = NaN;
+                                    deckW.state(oi) = 0;                                  
                                     
                                     ti = 4; % Cell 4
                                     tabXY = BP.TTT(ti,:);
@@ -1270,14 +1309,13 @@ function Ass3GUI2RAPID()
                                     table.type(5,6) = deckW.type(oi);
                                     table.theta(5,6) = deckW.theta(oi);
                                     deckW.theta(oi) = NaN;
-                                    
+                                    deckW.type(oi) = NaN;
                                     editRow = find(tablestate(:,1)==oi+100,1);
                                 else
                                     xi = find(deckE.state==1,1);
                                     tabXY = BP.deckE(xi,:);
                                     TTTpickup(socket,tabXY,tttapp);
-                                    deckE.state(xi) = 0;
-                                    deckE.type(xi) = NaN;
+                                    deckE.state(xi) = 0;                                    
                                     
                                     ti = 4; % Cell 4
                                     tabXY = BP.TTT(ti,:);
@@ -1285,7 +1323,7 @@ function Ass3GUI2RAPID()
                                     table.type(5,6) = deckE.type(xi);
                                     table.theta(5,6) = deckE.theta(xi);
                                     deckE.theta(xi) = NaN;
-                                    
+                                    deckE.type(xi) = NaN;
                                     editRow = find(tablestate(:,1)==xi+200,1);
                                 end
                                 board(5,6) = 1;
@@ -1304,7 +1342,6 @@ function Ass3GUI2RAPID()
                                     tabXY = BP.deckW(oi,:);
                                     TTTpickup(socket,tabXY,tttapp);
                                     deckW.state(oi) = 0;
-                                    deckW.type(oi) = NaN;
                                     
                                     ti = 5; % Cell 5
                                     tabXY = BP.TTT(ti,:);
@@ -1312,14 +1349,13 @@ function Ass3GUI2RAPID()
                                     table.type(5,5) = deckW.type(oi);
                                     table.theta(5,5) = deckW.theta(oi);
                                     deckW.theta(oi) = NaN;
-                                    
+                                    deckW.type(oi) = NaN;
                                     editRow = find(tablestate(:,1)==oi+100,1);
                                 else
                                     xi = find(deckE.state==1,1);
                                     tabXY = BP.deckE(xi,:);
                                     TTTpickup(socket,tabXY,tttapp);
                                     deckE.state(xi) = 0;
-                                    deckE.type(xi) = NaN;
                                     
                                     ti = 5; % Cell 5
                                     tabXY = BP.TTT(ti,:);
@@ -1327,7 +1363,7 @@ function Ass3GUI2RAPID()
                                     table.type(5,5) = deckE.type(xi);
                                     table.theta(5,5) = deckE.theta(xi);
                                     deckE.theta(xi) = NaN;
-                                    
+                                    deckE.type(xi) = NaN;
                                     editRow = find(tablestate(:,1)==xi+200,1);
                                 end
                                 board(5,5) = 1;
@@ -1345,8 +1381,7 @@ function Ass3GUI2RAPID()
                                     oi = find(deckW.state==1,1);
                                     tabXY = BP.deckW(oi,:);
                                     TTTpickup(socket,tabXY,tttapp);
-                                    deckW.state(oi) = 0;
-                                    deckW.type(oi) = NaN;
+                                    deckW.state(oi) = 0;                                  
                                     
                                     ti = 6; % Cell 6
                                     tabXY = BP.TTT(ti,:);
@@ -1354,14 +1389,13 @@ function Ass3GUI2RAPID()
                                     table.type(5,4) = deckW.type(oi);
                                     table.theta(5,4) = deckW.theta(oi);
                                     deckW.theta(oi) = NaN;
-                                    
+                                    deckW.type(oi) = NaN;
                                     editRow = find(tablestate(:,1)==oi+100,1);
                                 else
                                     xi = find(deckE.state==1,1);
                                     tabXY = BP.deckE(xi,:);
                                     TTTpickup(socket,tabXY,tttapp);
-                                    deckE.state(xi) = 0;
-                                    deckE.type(xi) = NaN;
+                                    deckE.state(xi) = 0;                                  
                                     
                                     ti = 6; % Cell 6
                                     tabXY = BP.TTT(ti,:);
@@ -1369,7 +1403,7 @@ function Ass3GUI2RAPID()
                                     table.type(5,4) = deckE.type(xi);
                                     table.theta(5,4) = deckE.theta(xi);
                                     deckE.theta(xi) = NaN;
-                                    
+                                    deckE.type(xi) = NaN;
                                     editRow = find(tablestate(:,1)==xi+200,1);
                                 end
                                 board(5,4) = 1;
@@ -1387,8 +1421,7 @@ function Ass3GUI2RAPID()
                                     oi = find(deckW.state==1,1);
                                     tabXY = BP.deckW(oi,:);
                                     TTTpickup(socket,tabXY,tttapp);
-                                    deckW.state(oi) = 0;
-                                    deckW.type(oi) = NaN;
+                                    deckW.state(oi) = 0;                                    
                                     
                                     ti = 7; % Cell 7
                                     tabXY = BP.TTT(ti,:);
@@ -1396,14 +1429,13 @@ function Ass3GUI2RAPID()
                                     table.type(4,6) = deckW.type(oi);
                                     table.theta(4,6) = deckW.theta(oi);
                                     deckW.theta(oi) = NaN;
-                                    
+                                    deckW.type(oi) = NaN;
                                     editRow = find(tablestate(:,1)==oi+100,1);
                                 else
                                     xi = find(deckE.state==1,1);
                                     tabXY = BP.deckE(xi,:);
                                     TTTpickup(socket,tabXY,tttapp);
-                                    deckE.state(xi) = 0;
-                                    deckE.type(xi) = NaN;
+                                    deckE.state(xi) = 0;                                    
                                     
                                     ti = 7; % Cell 7
                                     tabXY = BP.TTT(ti,:);
@@ -1411,7 +1443,7 @@ function Ass3GUI2RAPID()
                                     table.type(4,6) = deckE.type(xi);
                                     table.theta(4,6) = deckE.theta(xi);
                                     deckE.theta(xi) = NaN;
-                                    
+                                    deckE.type(xi) = NaN;
                                     editRow = find(tablestate(:,1)==xi+200,1);
                                 end
                                 board(4,6) = 1;
@@ -1430,7 +1462,6 @@ function Ass3GUI2RAPID()
                                     tabXY = BP.deckW(oi,:);
                                     TTTpickup(socket,tabXY,tttapp);
                                     deckW.state(oi) = 0;
-                                    deckW.type(oi) = NaN;
                                     
                                     ti = 8; % Cell 8
                                     tabXY = BP.TTT(ti,:);
@@ -1438,14 +1469,13 @@ function Ass3GUI2RAPID()
                                     table.type(4,5) = deckW.type(oi);
                                     table.theta(4,5) = deckW.theta(oi);
                                     deckW.theta(oi) = NaN;
-                                    
+                                    deckW.type(oi) = NaN;
                                     editRow = find(tablestate(:,1)==oi+100,1);
                                 else
                                     xi = find(deckE.state==1,1);
                                     tabXY = BP.deckE(xi,:);
                                     TTTpickup(socket,tabXY,tttapp);
                                     deckE.state(xi) = 0;
-                                    deckE.type(xi) = NaN;
                                     
                                     ti = 8; % Cell 8
                                     tabXY = BP.TTT(ti,:);
@@ -1453,7 +1483,7 @@ function Ass3GUI2RAPID()
                                     table.type(4,5) = deckE.type(xi);
                                     table.theta(4,5) = deckE.theta(xi);
                                     deckE.theta(xi) = NaN;
-                                    
+                                    deckE.type(xi) = NaN;
                                     editRow = find(tablestate(:,1)==xi+200,1);
                                 end
                                 board(4,5) = 1;
@@ -1471,8 +1501,7 @@ function Ass3GUI2RAPID()
                                     oi = find(deckW.state==1,1);
                                     tabXY = BP.deckW(oi,:);
                                     TTTpickup(socket,tabXY,tttapp);
-                                    deckW.state(oi) = 0;
-                                    deckW.type(oi) = NaN;
+                                    deckW.state(oi) = 0;                                   
                                     
                                     ti = 9; % Cell 9
                                     tabXY = BP.TTT(ti,:);
@@ -1480,14 +1509,13 @@ function Ass3GUI2RAPID()
                                     table.type(4,4) = deckW.type(oi);
                                     table.theta(4,4) = deckW.theta(oi);
                                     deckW.theta(oi) = NaN;
-                                    
+                                    deckW.type(oi) = NaN;
                                     editRow = find(tablestate(:,1)==oi+100,1);
                                 else
                                     xi = find(deckE.state==1,1);
                                     tabXY = BP.deckE(xi,:);
                                     TTTpickup(socket,tabXY,tttapp);
                                     deckE.state(xi) = 0;
-                                    deckE.type(xi) = NaN;
                                     
                                     ti = 9; % Cell 9
                                     tabXY = BP.TTT(ti,:);
@@ -1495,7 +1523,7 @@ function Ass3GUI2RAPID()
                                     table.type(4,4) = deckE.type(xi);
                                     table.theta(4,4) = deckE.theta(xi);
                                     deckE.theta(xi) = NaN;
-                                    
+                                    deckE.type(xi) = NaN;
                                     editRow = find(tablestate(:,1)==xi+200,1);
                                 end
                                 board(4,4) = 1;
@@ -1739,7 +1767,7 @@ function Ass3GUI2RAPID()
                                 tabXY = BP.deckW(oi,:);
                                 TTTpickup(socket,tabXY,tttapp);
                                 deckW.state(oi) = 0;
-                                deckW.type(oi) = NaN;
+                                
                                 ti = bestMove;
                                 tabXY = BP.TTT(ti,:);
                                 TTTdropoff(socket,tabXY,tttapp);
@@ -1750,6 +1778,7 @@ function Ass3GUI2RAPID()
                                 board((4-ri)+3,(4-ci)+3) = 1;
                                 table.theta((4-ri)+3,(4-ci)+3) = deckW.theta(oi);
                                 deckW.theta(oi) = NaN;
+                                deckW.type(oi) = NaN;
                                 turn = 1;
                                 
                                 BPi  = sub2ind([9 9],(4-ri)+3,(4-ci)+3);
@@ -1812,7 +1841,6 @@ function Ass3GUI2RAPID()
                                     tabXY = BP.deckE(xi,:);
                                     TTTpickup(socket,tabXY,tttapp);
                                     deckE.state(xi) = 0;
-                                    deckE.type(xi) = NaN;
                                     
                                     % Now move the block into Cell 1 Position
                                     ti = 1; % Cell 1
@@ -1821,7 +1849,7 @@ function Ass3GUI2RAPID()
                                     table.type(6,6) = deckE.type(xi);
                                     table.theta(6,6) = deckE.theta(xi);
                                     deckE.theta(xi) = NaN;
-                                    
+                                    deckE.type(xi) = NaN;
                                     boardState{1} = 'X';
                                     
                                     board(6,6) = 1;
@@ -1842,8 +1870,7 @@ function Ass3GUI2RAPID()
                                     xi = find(deckE.state==1,1);
                                     tabXY = BP.deckE(xi,:);
                                     TTTpickup(socket,tabXY,tttapp);
-                                    deckE.state(xi) = 0;
-                                    deckE.type(xi) = NaN;
+                                    deckE.state(xi) = 0;                                 
                                     
                                     ti = 2; % Cell 2
                                     tabXY = BP.TTT(ti,:);
@@ -1851,7 +1878,7 @@ function Ass3GUI2RAPID()
                                     table.type(6,5) = deckE.type(xi);
                                     table.theta(6,5) = deckE.theta(xi);
                                     deckE.theta(xi) = NaN;
-                                    
+                                    deckE.type(xi) = NaN;
                                     boardState{2} = 'X';
                                     
                                     board(6,5) = 1;
@@ -1872,8 +1899,7 @@ function Ass3GUI2RAPID()
                                     xi = find(deckE.state==1,1);
                                     tabXY = BP.deckE(xi,:);
                                     TTTpickup(socket,tabXY,tttapp);
-                                    deckE.state(xi) = 0;
-                                    deckE.type(xi) = NaN;
+                                    deckE.state(xi) = 0;                              
                                     
                                     ti = 3; % Cell 3
                                     tabXY = BP.TTT(ti,:);
@@ -1881,7 +1907,7 @@ function Ass3GUI2RAPID()
                                     table.type(6,4) = deckE.type(xi);
                                     table.theta(6,4) = deckE.theta(xi);
                                     deckE.theta(xi) = NaN;
-                                    
+                                    deckE.type(xi) = NaN;
                                     boardState{3} = 'X';
                                     
                                     board(6,4) = 1;
@@ -1902,8 +1928,7 @@ function Ass3GUI2RAPID()
                                     xi = find(deckE.state==1,1);
                                     tabXY = BP.deckE(xi,:);
                                     TTTpickup(socket,tabXY,tttapp);
-                                    deckE.state(xi) = 0;
-                                    deckE.type(xi) = NaN;
+                                    deckE.state(xi) = 0;                    
                                     
                                     ti = 4; % Cell 4
                                     tabXY = BP.TTT(ti,:);
@@ -1911,7 +1936,7 @@ function Ass3GUI2RAPID()
                                     table.type(5,6) = deckE.type(xi);
                                     table.theta(5,6) = deckE.theta(xi);
                                     deckE.theta(xi) = NaN;
-                                    
+                                    deckE.type(xi) = NaN;
                                     boardState{4} = 'X';
                                     
                                     board(5,6) = 1;
@@ -1932,8 +1957,7 @@ function Ass3GUI2RAPID()
                                     xi = find(deckE.state==1,1);
                                     tabXY = BP.deckE(xi,:);
                                     TTTpickup(socket,tabXY,tttapp);
-                                    deckE.state(xi) = 0;
-                                    deckE.type(xi) = NaN;
+                                    deckE.state(xi) = 0;                            
                                     
                                     ti = 5; % Cell 5
                                     tabXY = BP.TTT(ti,:);
@@ -1941,7 +1965,7 @@ function Ass3GUI2RAPID()
                                     table.type(5,5) = deckE.type(xi);
                                     table.theta(5,5) = deckE.theta(xi);
                                     deckE.theta(xi) = NaN;
-                                    
+                                    deckE.type(xi) = NaN;
                                     boardState{5} = 'X';
                                     
                                     board(5,5) = 1;
@@ -1963,15 +1987,14 @@ function Ass3GUI2RAPID()
                                     tabXY = BP.deckE(xi,:);
                                     TTTpickup(socket,tabXY,tttapp);
                                     deckE.state(xi) = 0;
-                                    deckE.type(xi) = NaN;
-                                    
+
                                     ti = 6; % Cell 6
                                     tabXY = BP.TTT(ti,:);
                                     TTTdropoff(socket,tabXY,tttapp);
                                     table.type(5,4) = deckE.type(xi);
                                     table.theta(5,4) = deckE.theta(xi);
                                     deckE.theta(xi) = NaN;
-                                    
+                                    deckE.type(xi) = NaN;
                                     boardState{6} = 'X';
                                     
                                     board(5,4) = 1;
@@ -1993,7 +2016,6 @@ function Ass3GUI2RAPID()
                                     tabXY = BP.deckE(xi,:);
                                     TTTpickup(socket,tabXY,tttapp);
                                     deckE.state(xi) = 0;
-                                    deckE.type(xi) = NaN;
                                     
                                     ti = 7; % Cell 7
                                     tabXY = BP.TTT(ti,:);
@@ -2001,7 +2023,7 @@ function Ass3GUI2RAPID()
                                     table.type(4,6) = deckE.type(xi);
                                     table.theta(4,6) = deckE.theta(xi);
                                     deckE.theta(xi) = NaN;
-                                    
+                                    deckE.type(xi) = NaN;
                                     boardState{7} = 'X';
                                     
                                     board(4,6) = 1;
@@ -2022,8 +2044,7 @@ function Ass3GUI2RAPID()
                                     xi = find(deckE.state==1,1);
                                     tabXY = BP.deckE(xi,:);
                                     TTTpickup(socket,tabXY,tttapp);
-                                    deckE.state(xi) = 0;
-                                    deckE.type(xi) = NaN;
+                                    deckE.state(xi) = 0;                                
                                     
                                     ti = 8; % Cell 8
                                     tabXY = BP.TTT(ti,:);
@@ -2031,7 +2052,7 @@ function Ass3GUI2RAPID()
                                     table.type(4,5) = deckE.type(xi);
                                     table.theta(4,5) = deckE.theta(xi);
                                     deckE.theta(xi) = NaN;
-                                    
+                                    deckE.type(xi) = NaN;
                                     boardState{8} = 'X';
                                     
                                     board(4,5) = 1;
@@ -2052,8 +2073,7 @@ function Ass3GUI2RAPID()
                                     xi = find(deckE.state==1,1);
                                     tabXY = BP.deckE(xi,:);
                                     TTTpickup(socket,tabXY,tttapp);
-                                    deckE.state(xi) = 0;
-                                    deckE.type(xi) = NaN;
+                                    deckE.state(xi) = 0;                                   
                                     
                                     ti = 9; % Cell 9
                                     tabXY = BP.TTT(ti,:);
@@ -2061,7 +2081,7 @@ function Ass3GUI2RAPID()
                                     table.type(4,4) = deckE.type(xi);
                                     table.theta(4,4) = deckE.theta(xi);
                                     deckE.theta(xi) = NaN;
-                                    
+                                    deckE.type(xi) = NaN;
                                     boardState{9} = 'X';
                                     
                                     board(4,4) = 1;
@@ -2188,15 +2208,6 @@ function Ass3GUI2RAPID()
 end
 
 function BPpickup(socket,tabXY)
-% BPpickup: picks up a block from input BP position
-% BPpickup(socket,tabXY)
-% Requires:
-%       "socket" : tcpip(robot_IP_address, robot_port)
-%       "tabXY" : A 2x1 array of X and Y coordinate on table
-%Example: 
-%       socket = tcpip(robot_IP_address, robot_port);
-%       BPpickup(socket,[20,100]);
-
     %move to BP position
     cmd = sprintf('MVPOSTAB %f,%f,100',tabXY);
     fwrite(socket,cmd);
@@ -2226,14 +2237,6 @@ function BPpickup(socket,tabXY)
 end
 
 function CONdropoff(socket,conXY)
-% CONdropoff: moves and places current block at input conveyor position
-% CONdropoff(socket,conXY)
-% Requires:
-%       "socket" : tcpip(robot_IP_address, robot_port)
-%       "conXY" : A 2x1 array of X and Y coordinate on Conveyor
-%Example: 
-%       socket = tcpip(robot_IP_address, robot_port);
-%       CONdropoff(socket,[20,100]);
     cmd = sprintf('MVPOSCON %f,%f,200',conXY);
     fwrite(socket,cmd);
     disp(cmd);
@@ -2267,14 +2270,6 @@ function CONdropoff(socket,conXY)
 end
 
 function CONpickup(socket,conXY)
-% CONpickup: Picks up a block from input conveyor position
-% CONpickup(socket,conXY)
-% Requires:
-%       "socket" : tcpip(robot_IP_address, robot_port)
-%       "conXY" : A 2x1 array of X and Y coordinate on conveyor
-%Example: 
-%       socket = tcpip(robot_IP_address, robot_port);
-%       CONpickup(socket,[20,100]);
    cmd = sprintf('MVPOSCON %f,%f,200',conXY);
    disp(cmd);
    fwrite(socket,cmd); 
@@ -2302,15 +2297,6 @@ function CONpickup(socket,conXY)
 end
 
 function BPdropoff(socket,tabXY)
-% BPdropoff: moves and places currently held block at input table
-% coordinates
-% BPdropoff(socket,tabXY)
-% Requires:
-%       "socket" : tcpip(robot_IP_address, robot_port)
-%       "tabXY" : A 2x1 array of X and Y coordinate on table
-%Example: 
-%       socket = tcpip(robot_IP_address, robot_port);
-%       BPdropoff(socket,[20,100]);
    cmd = sprintf('MVPOSTAB %f,%f,100',tabXY);
    fwrite(socket,cmd);
    disp(cmd);
@@ -2343,10 +2329,6 @@ function BPdropoff(socket,tabXY)
 end
 
 function WaitForReady(socket)
-%WaitForReady : Checks if the robot and waits till it is not
-%WaitForReady(socket)
-%Requires:
-%   "socket" : tcpip(robot_IP_address, robot_port)
     movecomplete = 0;
     while(~movecomplete)
        pause(0.5);
@@ -2389,18 +2371,6 @@ function CheckPause(socket,tttapp)
 end
 
 function TTTpickup(socket,tabXY,tttapp)
-% TTTpickup: picks up block from the input BP position and is able to be
-% paused
-% TTTpickup(socket,tabXY,tttapp)
-% Requires:
-%       "socket" : tcpip(robot_IP_address, robot_port)
-%       "tabXY" : A 2x1 array of X and Y coordinate on table
-%       "tttapp" : Handle to the GUI object of ttt
-%Example: 
-%       socket = tcpip(robot_IP_address, robot_port);
-%       tttapp = TTTGUI();
-%       TTTpickup(socket,[20,100],tttapp);
-
     %move to BP position
     cmd = sprintf('MVPOSTAB %f,%f,100',tabXY);
     fwrite(socket,cmd);
@@ -2438,17 +2408,6 @@ function TTTpickup(socket,tabXY,tttapp)
 end
 
 function TTTdropoff(socket,tabXY,tttapp)
-% TTTdropoff: places held block at input BP position and is able to be
-% paused
-% TTTdropoff(socket,tabXY,tttapp)
-% Requires:
-%       "socket" : tcpip(robot_IP_address, robot_port)
-%       "tabXY" : A 2x1 array of X and Y coordinate on table
-%       "tttapp" : Handle to the GUI object of ttt
-%Example: 
-%       socket = tcpip(robot_IP_address, robot_port);
-%       tttapp = TTTGUI();
-%       TTTdropoff(socket,[20,100],tttapp);
    cmd = sprintf('MVPOSTAB %f,%f,100',tabXY);
    fwrite(socket,cmd);
    disp(cmd);
@@ -2489,19 +2448,11 @@ function TTTdropoff(socket,tabXY,tttapp)
 end
 
 function [str] =  ReceiveState(socket)
-%ReceiveState : Retrieves current robot state from robot studio
-%ReceiveState(socket)
-%Requires:
-%   "socket" : tcpip(robot_IP_address, robot_port)
     data = fgetl(socket);
     str = char(data);
 end
 
 function [str] =  ReceiveString(socket)
-%ReceiveState : Retrieves replied string from robot studio
-%ReceiveString(socket)
-%Requires:
-%   "socket" : tcpip(robot_IP_address, robot_port)
     data = fgetl(socket);
     str = data;
 end
