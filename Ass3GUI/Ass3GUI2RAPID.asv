@@ -2389,7 +2389,7 @@ function CheckPause(socket,tttapp)
 end
 
 function TTTpickup(socket,tabXY,tttapp)
-% TTTpickup: picks up block from the input BP position and is able to be
+% TTTpickup: places held block at input BP position and is able to be
 % paused
 % TTTpickup(socket,tabXY,tttapp)
 % Requires:
@@ -2440,7 +2440,7 @@ end
 function TTTdropoff(socket,tabXY,tttapp)
 % TTTdropoff: places held block at input BP position and is able to be
 % paused
-% TTTdropoff(socket,tabXY,tttapp)
+% TTTpickup(socket,tabXY,tttapp)
 % Requires:
 %       "socket" : tcpip(robot_IP_address, robot_port)
 %       "tabXY" : A 2x1 array of X and Y coordinate on table
@@ -2448,7 +2448,7 @@ function TTTdropoff(socket,tabXY,tttapp)
 %Example: 
 %       socket = tcpip(robot_IP_address, robot_port);
 %       tttapp = TTTGUI();
-%       TTTdropoff(socket,[20,100],tttapp);
+%       TTTpickup(socket,[20,100],tttapp);
    cmd = sprintf('MVPOSTAB %f,%f,100',tabXY);
    fwrite(socket,cmd);
    disp(cmd);
