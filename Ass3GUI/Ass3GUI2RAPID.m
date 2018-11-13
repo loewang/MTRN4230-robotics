@@ -1139,8 +1139,7 @@ function Ass3GUI2RAPID()
                 
                 ori = tabapp.AddOriEditField.Value;
                 tableData = tableAddBlock(img, block, type, ori);
-                
-                %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                plotFunction(tableData, img, tabapp.UIAxes);
                 
                 tabapp.ADDButtonPressed = 0;
             end
