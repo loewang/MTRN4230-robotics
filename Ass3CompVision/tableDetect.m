@@ -78,7 +78,8 @@ function block = dataAssociation(block, objCent)
         for i = 1:length(newBlocks)
             block(end+1,1) = objCent(newBlocks(i),1);
             block(end,2) = objCent(newBlocks(i),2);
-            block(end,obj) = 1;
+            block(end,3) = 1;
+            block(end,4) = 0;                                
         end
 
     end
