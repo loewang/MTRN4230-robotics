@@ -1138,10 +1138,8 @@ function Ass3GUI2RAPID()
                 end
                 
                 ori = tabapp.AddOriEditField.Value;
-                tableData = tableAddBlock(img, block, type, ori);
-                
-                %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-                
+                tableDaratableAddBlock(img, block, type, ori);
+
                 tabapp.ADDButtonPressed = 0;
             end
             

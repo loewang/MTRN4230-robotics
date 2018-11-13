@@ -17,16 +17,16 @@ function block = tableAddBlock(img,block,shape,ori);
     
     szb = size(block);
 
-    for  j = 1:szb(1)
-        if block(j,3)==1
-            plot(block(j,1), block(j,2), 'ro');
-            hold on;
-        else
-            plot(block(j,1), block(j,2), 'go');
-            hold on;
-        end
-    end
-
+%     for  j = 1:szb(1)
+%         if block(j,3)==1
+%             plot(block(j,1), block(j,2), 'ro');
+%             hold on;
+%         else
+%             plot(block(j,1), block(j,2), 'go');
+%             hold on;
+%         end
+%     end
+    close all;
 end
 
     
