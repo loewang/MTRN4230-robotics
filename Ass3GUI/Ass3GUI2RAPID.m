@@ -535,6 +535,28 @@ function Ass3GUI2RAPID()
                 convapp.UpdateImageButtonPressed = 0;
             end
             
+            if(convapp.ADDButtonPressed)
+                % vid2 = videoinput('winvideo', 2, 'MJPG_1600x1200');
+                % preview(vid2);
+                % img = getsnapshot(vid2);
+                img = imread('conveyor_img_10_03_11_39_04.jpg');
+                img = undistortImage(img, cameraConveyorParams); %Undistord image
+                constate = ConveyorImageProcess(img,cameraConveyorParams,R,t,convapp.UIAxes);
+                conv.BP = ones(size(constate,1),1);
+                convapp.ADDButtonPressed = 0;
+            end
+            
+            if(convapp.DELETEButtonPressed)
+                % vid2 = videoinput('winvideo', 2, 'MJPG_1600x1200');
+                % preview(vid2);
+                % img = getsnapshot(vid2);
+                img = imread('conveyor_img_10_03_11_39_04.jpg');
+                img = undistortImage(img, cameraConveyorParams); %Undistord image
+                constate = RemoveBlockConveyor(constate,img,cameraConveyorParams,R,t,convapp.UIAxes);
+                conv.BP = ones(size(constate,1),1);
+                convapp.DELETEButtonPressed = 0;
+            end
+
             %SIMPLE MOVE --------------------------------------------------
             if(mvapp.MOVEButtonPressed)  
                 fwrite(socket,'SETSOLEN 0');
@@ -1072,33 +1094,32 @@ function Ass3GUI2RAPID()
                 end
                 mvapp.TableFILLButtonPressed = 0;
             end
-            
+
             %correct detected blocks--------------------------------------
-            
-            if(tabapp.EDITButtonPressed)
-                if(strcmp(tabapp.EDITButton.Text,'EDIT'))
-                    tablestate = tabapp.UITable.Data;
-                    
-                    board = zeros(9,9);
-                    gridi = tablestate(:,1)<82;
-                    dWi = tablestate(:,1)>82 && tablestate(:,1)<107;
-                    dEi = tablestate(:,1)>107 && tablestate(:,1)<207;
-                    
-                    deckWi = tablestate(dWi)-100;
-                    deckEi = tablestate(dEi)-200;
-                    
-                    board(tablestate(gridi,1)) = 1;
-                    
-                    table.type(tablestate(gridi,1)) = tablestate(gridi,2);
-                    table.theta(tablestate(gridi,1)) = tablestate(gridi,5);
-                    
-                    deckW.type(deckWi) = tablestate(dWi,2);
-                    deckE.type(deckEi) = tablestate(dEi,2);
-                    
-                    deckW.theta(deckWi) = tablestate(dWi,5);
-                    deckE.theta(deckEi) = tablestate(dEi,5);
-                end
-                tabapp.EDITButtonPressed = 0;
+            if(tabapp.CellEdited)            
+                
+                tablestate = tabapp.UITable.Data;
+                
+                board = zeros(9,9);
+                gridi = tablestate(:,1)<82;
+                dWi = tablestate(:,1)>82 & tablestate(:,1)<107;
+                dEi = tablestate(:,1)>107 & tablestate(:,1)<207;
+                
+                deckWi = tablestate(dWi)-100;
+                deckEi = tablestate(dEi)-200;
+                
+                board(tablestate(gridi,1)) = 1;
+                
+                table.type(tablestate(gridi,1)) = tablestate(gridi,2);
+                table.theta(tablestate(gridi,1)) = tablestate(gridi,5);
+                
+                deckW.type(deckWi) = tablestate(dWi,2);
+                deckE.type(deckEi) = tablestate(dEi,2);
+                
+                deckW.theta(deckWi) = tablestate(dWi,5);
+                deckE.theta(deckEi) = tablestate(dEi,5);
+                
+                tabapp.CellEdited = 0;
             end
             
             if(tabapp.ADDButtonPressed)
@@ -1150,459 +1171,464 @@ function Ass3GUI2RAPID()
                 xi = sum(deckE.state);
                 
                 if(oi+xi==12)
-                    % Open TTT GUI
-                    tttapp = TTTGUI();
-                    pause(1);
-                    c = zeros(1,9);
-                    
-                    while(tttapp.EndGameButtonPressed == 0)
+                    if(sum(deckW.type)==0 && sum(deckE.type)==6)
+                        % Open TTT GUI
+                        tttapp = TTTGUI();
+                        pause(1);
+                        c = zeros(1,9);
                         
-                        % Once cell is pressed, calc the position on board (CP)
-                        % The robot will pick up either a Letter or Shape block
-                        % depending on the player turn, and release it on the Cell
-                        % Point (CP).
-                        
-                        if(tttapp.EndGameButtonVal ==1)
-                            tttapp.EndGameButtonPressed = 1;
-                        else
+                        while(tttapp.EndGameButtonPressed == 0)
                             
-                            % Cell 1 Pressed - D4
-                            if(tttapp.CellOneVal == 1 && c(1) == 0)
+                            % Once cell is pressed, calc the position on board (CP)
+                            % The robot will pick up either a Letter or Shape block
+                            % depending on the player turn, and release it on the Cell
+                            % Point (CP).
+                            
+                            if(tttapp.EndGameButtonVal ==1)
+                                tttapp.EndGameButtonPressed = 1;
+                            else
+                                % Cell 1 Pressed - D4
+                                if(tttapp.CellOneVal == 1 && c(1) == 0)
+                                    
+                                    % Now we need to see which player turn it is.
+                                    % Player 1 is 'O' (Shapes) and 2 is 'X'(Letters)
+                                    if (tttapp.Cell1Button.Text == tttapp.Player1)
+                                        
+                                        % Player 1 deck is located WESTERN side of table
+                                        % Move to first block pos (Western Side for Player 1)
+                                        oi = find(deckW.state==1,1);
+                                        tabXY = BP.deckW(oi,:);
+                                        TTTpickup(socket,tabXY,tttapp);
+                                        deckW.state(oi) = 0;
+                                        
+                                        % Now move the block into Cell 1 Position
+                                        ti = 1; % Cell 1
+                                        tabXY = BP.TTT(ti,:);
+                                        TTTdropoff(socket,tabXY,tttapp);
+                                        table.type(6,6) = deckW.type(oi);
+                                        table.theta(6,6) = deckW.theta(oi);
+                                        deckW.theta(oi) = NaN;
+                                        deckW.type(oi) = NaN;
+                                        editRow = find(tablestate(:,1)==oi+100,1);
+                                    else
+                                        xi = find(deckE.state==1,1);
+                                        tabXY = BP.deckE(xi,:);
+                                        TTTpickup(socket,tabXY,tttapp);
+                                        deckE.state(xi) = 0;
+                                        
+                                        % Now move the block into Cell 1 Position
+                                        ti = 1; % Cell 1
+                                        tabXY = BP.TTT(ti,:);
+                                        TTTdropoff(socket,tabXY,tttapp);
+                                        table.type(6,6) = deckE.type(xi);
+                                        table.theta(6,6) = deckE.theta(xi);
+                                        deckE.theta(xi) = NaN;
+                                        deckE.type(xi) = NaN;
+                                        editRow = find(tablestate(:,1)==xi+200,1);
+                                    end
+                                    board(6,6) = 1;
+                                    c(1) = 1;
+                                    BPi  = sub2ind([9 9],6,6);
+                                    
+                                    %change block BPs
+                                    tablestate(editRow,1) = BPi;
+                                    tablestate(editRow,3:4) = tabXY;
+                                    tabapp.UITable.Data = tablestate;
+                                end
                                 
-                                % Now we need to see which player turn it is.
-                                % Player 1 is 'O' (Shapes) and 2 is 'X'(Letters)
-                                if (tttapp.Cell1Button.Text == tttapp.Player1)
-                                    
-                                    % Player 1 deck is located WESTERN side of table
-                                    % Move to first block pos (Western Side for Player 1)
-                                    oi = find(deckW.state==1,1);
-                                    tabXY = BP.deckW(oi,:);
-                                    TTTpickup(socket,tabXY,tttapp);
-                                    deckW.state(oi) = 0;
-
-                                    % Now move the block into Cell 1 Position
-                                    ti = 1; % Cell 1
-                                    tabXY = BP.TTT(ti,:);
-                                    TTTdropoff(socket,tabXY,tttapp);
-                                    table.type(6,6) = deckW.type(oi);
-                                    table.theta(6,6) = deckW.theta(oi);
-                                    deckW.theta(oi) = NaN;
-                                    deckW.type(oi) = NaN;
-                                    editRow = find(tablestate(:,1)==oi+100,1);
-                                else
-                                    xi = find(deckE.state==1,1);
-                                    tabXY = BP.deckE(xi,:);
-                                    TTTpickup(socket,tabXY,tttapp);
-                                    deckE.state(xi) = 0;
-
-                                    % Now move the block into Cell 1 Position
-                                    ti = 1; % Cell 1
-                                    tabXY = BP.TTT(ti,:);
-                                    TTTdropoff(socket,tabXY,tttapp);
-                                    table.type(6,6) = deckE.type(xi);
-                                    table.theta(6,6) = deckE.theta(xi);
-                                    deckE.theta(xi) = NaN;
-                                    deckE.type(xi) = NaN;
-                                    editRow = find(tablestate(:,1)==xi+200,1);
+                                % Cell 2 Pressed - D5
+                                if(tttapp.CellTwoVal == 1 && c(2) == 0)
+                                    if (tttapp.Cell2Button.Text == tttapp.Player1)
+                                        oi = find(deckW.state==1,1);
+                                        tabXY = BP.deckW(oi,:);
+                                        TTTpickup(socket,tabXY,tttapp);
+                                        deckW.state(oi) = 0;
+                                        
+                                        ti = 2; % Cell 2
+                                        tabXY = BP.TTT(ti,:);
+                                        TTTdropoff(socket,tabXY,tttapp);
+                                        table.type(6,5) = deckW.type(oi);
+                                        table.theta(6,5) = deckW.theta(oi);
+                                        deckW.theta(oi) = NaN;
+                                        deckW.type(oi) = NaN;
+                                        editRow = find(tablestate(:,1)==oi+100,1);
+                                    else
+                                        xi = find(deckE.state==1,1);
+                                        tabXY = BP.deckE(xi,:);
+                                        TTTpickup(socket,tabXY,tttapp);
+                                        deckE.state(xi) = 0;
+                                        
+                                        ti = 2; % Cell 2
+                                        tabXY = BP.TTT(ti,:);
+                                        TTTdropoff(socket,tabXY,tttapp);
+                                        table.type(6,5) = deckE.type(xi);
+                                        table.theta(6,5) = deckE.theta(xi);
+                                        deckE.theta(xi) = NaN;
+                                        deckE.type(xi) = NaN;
+                                        editRow = find(tablestate(:,1)==xi+200,1);
+                                    end
+                                    board(6,5) = 1;
+                                    c(2) = 1;
+                                    BPi  = sub2ind([9 9],6,5);
+                                    %change block BPs
+                                    tablestate(editRow,1) = BPi;
+                                    tablestate(editRow,3:4) = tabXY;
+                                    tabapp.UITable.Data = tablestate;
                                 end
-                                board(6,6) = 1;
-                                c(1) = 1;
-                                BPi  = sub2ind([9 9],6,6);
                                 
-                                %change block BPs
-                                tablestate(editRow,1) = BPi;
-                                tablestate(editRow,3:4) = tabXY;
-                                tabapp.UITable.Data = tablestate;
-                            end
-                            
-                            % Cell 2 Pressed - D5
-                            if(tttapp.CellTwoVal == 1 && c(2) == 0)
-                                if (tttapp.Cell2Button.Text == tttapp.Player1)
-                                    oi = find(deckW.state==1,1);
-                                    tabXY = BP.deckW(oi,:);
-                                    TTTpickup(socket,tabXY,tttapp);
-                                    deckW.state(oi) = 0;
-                                    
-                                    ti = 2; % Cell 2
-                                    tabXY = BP.TTT(ti,:);
-                                    TTTdropoff(socket,tabXY,tttapp);
-                                    table.type(6,5) = deckW.type(oi);
-                                    table.theta(6,5) = deckW.theta(oi);
-                                    deckW.theta(oi) = NaN;
-                                    deckW.type(oi) = NaN;
-                                    editRow = find(tablestate(:,1)==oi+100,1);
-                                else
-                                    xi = find(deckE.state==1,1);
-                                    tabXY = BP.deckE(xi,:);
-                                    TTTpickup(socket,tabXY,tttapp);
-                                    deckE.state(xi) = 0;   
-                                    
-                                    ti = 2; % Cell 2
-                                    tabXY = BP.TTT(ti,:);
-                                    TTTdropoff(socket,tabXY,tttapp);
-                                    table.type(6,5) = deckE.type(xi);
-                                    table.theta(6,5) = deckE.theta(xi);
-                                    deckE.theta(xi) = NaN;
-                                    deckE.type(xi) = NaN;
-                                    editRow = find(tablestate(:,1)==xi+200,1);
+                                % Cell 3 Pressed - D6
+                                if(tttapp.CellThreeVal == 1 && c(3) == 0)
+                                    if (tttapp.Cell3Button.Text == tttapp.Player1)
+                                        oi = find(deckW.state==1,1);
+                                        tabXY = BP.deckW(oi,:);
+                                        TTTpickup(socket,tabXY,tttapp);
+                                        deckW.state(oi) = 0;
+                                        
+                                        ti = 3; % Cell 3
+                                        tabXY = BP.TTT(ti,:);
+                                        TTTdropoff(socket,tabXY,tttapp);
+                                        table.type(6,4) = deckW.type(oi);
+                                        table.theta(6,4) = deckW.theta(oi);
+                                        deckW.theta(oi) = NaN;
+                                        deckW.type(oi) = NaN;
+                                        editRow = find(tablestate(:,1)==oi+100,1);
+                                    else
+                                        xi = find(deckE.state==1,1);
+                                        tabXY = BP.deckE(xi,:);
+                                        TTTpickup(socket,tabXY,tttapp);
+                                        deckE.state(xi) = 0;
+                                        
+                                        ti = 3; % Cell 3
+                                        tabXY = BP.TTT(ti,:);
+                                        TTTdropoff(socket,tabXY,tttapp);
+                                        table.type(6,4) = deckE.type(xi);
+                                        table.theta(6,4) = deckE.theta(xi);
+                                        deckE.theta(xi) = NaN;
+                                        deckE.type(xi) = NaN;
+                                        editRow = find(tablestate(:,1)==xi+200,1);
+                                    end
+                                    board(6,4) = 1;
+                                    c(3) = 1;
+                                    BPi  = sub2ind([9 9],6,4);
+                                    %change block BPs
+                                    tablestate(editRow,1) = BPi;
+                                    tablestate(editRow,3:4) = tabXY;
+                                    tabapp.UITable.Data = tablestate;
                                 end
-                                board(6,5) = 1;
-                                c(2) = 1;
-                                BPi  = sub2ind([9 9],6,5);
-                                %change block BPs
-                                tablestate(editRow,1) = BPi;
-                                tablestate(editRow,3:4) = tabXY;
-                                tabapp.UITable.Data = tablestate;
-                            end
-                            
-                            % Cell 3 Pressed - D6
-                            if(tttapp.CellThreeVal == 1 && c(3) == 0)
-                                if (tttapp.Cell3Button.Text == tttapp.Player1)
-                                    oi = find(deckW.state==1,1);
-                                    tabXY = BP.deckW(oi,:);
-                                    TTTpickup(socket,tabXY,tttapp);
-                                    deckW.state(oi) = 0;                                    
-                                    
-                                    ti = 3; % Cell 3
-                                    tabXY = BP.TTT(ti,:);
-                                    TTTdropoff(socket,tabXY,tttapp);
-                                    table.type(6,4) = deckW.type(oi);
-                                    table.theta(6,4) = deckW.theta(oi);
-                                    deckW.theta(oi) = NaN;
-                                    deckW.type(oi) = NaN;
-                                    editRow = find(tablestate(:,1)==oi+100,1);
-                                else
-                                    xi = find(deckE.state==1,1);
-                                    tabXY = BP.deckE(xi,:);
-                                    TTTpickup(socket,tabXY,tttapp);
-                                    deckE.state(xi) = 0;      
-                                    
-                                    ti = 3; % Cell 3
-                                    tabXY = BP.TTT(ti,:);
-                                    TTTdropoff(socket,tabXY,tttapp);
-                                    table.type(6,4) = deckE.type(xi);
-                                    table.theta(6,4) = deckE.theta(xi);
-                                    deckE.theta(xi) = NaN;
-                                    deckE.type(xi) = NaN;
-                                    editRow = find(tablestate(:,1)==xi+200,1);
+                                
+                                % Cell 4 Pressed - E4
+                                if(tttapp.CellFourVal == 1 && c(4) == 0)
+                                    if (tttapp.Cell4Button.Text == tttapp.Player1)
+                                        oi = find(deckW.state==1,1);
+                                        tabXY = BP.deckW(oi,:);
+                                        TTTpickup(socket,tabXY,tttapp);
+                                        deckW.state(oi) = 0;
+                                        
+                                        ti = 4; % Cell 4
+                                        tabXY = BP.TTT(ti,:);
+                                        TTTdropoff(socket,tabXY,tttapp);
+                                        table.type(5,6) = deckW.type(oi);
+                                        table.theta(5,6) = deckW.theta(oi);
+                                        deckW.theta(oi) = NaN;
+                                        deckW.type(oi) = NaN;
+                                        editRow = find(tablestate(:,1)==oi+100,1);
+                                    else
+                                        xi = find(deckE.state==1,1);
+                                        tabXY = BP.deckE(xi,:);
+                                        TTTpickup(socket,tabXY,tttapp);
+                                        deckE.state(xi) = 0;
+                                        
+                                        ti = 4; % Cell 4
+                                        tabXY = BP.TTT(ti,:);
+                                        TTTdropoff(socket,tabXY,tttapp);
+                                        table.type(5,6) = deckE.type(xi);
+                                        table.theta(5,6) = deckE.theta(xi);
+                                        deckE.theta(xi) = NaN;
+                                        deckE.type(xi) = NaN;
+                                        editRow = find(tablestate(:,1)==xi+200,1);
+                                    end
+                                    board(5,6) = 1;
+                                    c(4) = 1;
+                                    BPi  = sub2ind([9 9],5,6);
+                                    %change block BPs
+                                    tablestate(editRow,1) = BPi;
+                                    tablestate(editRow,3:4) = tabXY;
+                                    tabapp.UITable.Data = tablestate;
                                 end
-                                board(6,4) = 1;
-                                c(3) = 1;
-                                BPi  = sub2ind([9 9],6,4);
-                                %change block BPs
-                                tablestate(editRow,1) = BPi;
-                                tablestate(editRow,3:4) = tabXY;
-                                tabapp.UITable.Data = tablestate;
-                            end
-                            
-                            % Cell 4 Pressed - E4
-                            if(tttapp.CellFourVal == 1 && c(4) == 0)
-                                if (tttapp.Cell4Button.Text == tttapp.Player1)
-                                    oi = find(deckW.state==1,1);
-                                    tabXY = BP.deckW(oi,:);
-                                    TTTpickup(socket,tabXY,tttapp);
-                                    deckW.state(oi) = 0;                                  
-                                    
-                                    ti = 4; % Cell 4
-                                    tabXY = BP.TTT(ti,:);
-                                    TTTdropoff(socket,tabXY,tttapp);
-                                    table.type(5,6) = deckW.type(oi);
-                                    table.theta(5,6) = deckW.theta(oi);
-                                    deckW.theta(oi) = NaN;
-                                    deckW.type(oi) = NaN;
-                                    editRow = find(tablestate(:,1)==oi+100,1);
-                                else
-                                    xi = find(deckE.state==1,1);
-                                    tabXY = BP.deckE(xi,:);
-                                    TTTpickup(socket,tabXY,tttapp);
-                                    deckE.state(xi) = 0;                                    
-                                    
-                                    ti = 4; % Cell 4
-                                    tabXY = BP.TTT(ti,:);
-                                    TTTdropoff(socket,tabXY,tttapp);
-                                    table.type(5,6) = deckE.type(xi);
-                                    table.theta(5,6) = deckE.theta(xi);
-                                    deckE.theta(xi) = NaN;
-                                    deckE.type(xi) = NaN;
-                                    editRow = find(tablestate(:,1)==xi+200,1);
+                                
+                                % Cell 5 Pressed - E5
+                                if(tttapp.CellFiveVal == 1 && c(5) == 0)
+                                    if (tttapp.Cell5Button.Text == tttapp.Player1)
+                                        oi = find(deckW.state==1,1);
+                                        tabXY = BP.deckW(oi,:);
+                                        TTTpickup(socket,tabXY,tttapp);
+                                        deckW.state(oi) = 0;
+                                        
+                                        ti = 5; % Cell 5
+                                        tabXY = BP.TTT(ti,:);
+                                        TTTdropoff(socket,tabXY,tttapp);
+                                        table.type(5,5) = deckW.type(oi);
+                                        table.theta(5,5) = deckW.theta(oi);
+                                        deckW.theta(oi) = NaN;
+                                        deckW.type(oi) = NaN;
+                                        editRow = find(tablestate(:,1)==oi+100,1);
+                                    else
+                                        xi = find(deckE.state==1,1);
+                                        tabXY = BP.deckE(xi,:);
+                                        TTTpickup(socket,tabXY,tttapp);
+                                        deckE.state(xi) = 0;
+                                        
+                                        ti = 5; % Cell 5
+                                        tabXY = BP.TTT(ti,:);
+                                        TTTdropoff(socket,tabXY,tttapp);
+                                        table.type(5,5) = deckE.type(xi);
+                                        table.theta(5,5) = deckE.theta(xi);
+                                        deckE.theta(xi) = NaN;
+                                        deckE.type(xi) = NaN;
+                                        editRow = find(tablestate(:,1)==xi+200,1);
+                                    end
+                                    board(5,5) = 1;
+                                    c(5) = 1;
+                                    BPi  = sub2ind([9 9],5,5);
+                                    %change block BPs
+                                    tablestate(editRow,1) = BPi;
+                                    tablestate(editRow,3:4) = tabXY;
+                                    tabapp.UITable.Data = tablestate;
                                 end
-                                board(5,6) = 1;
-                                c(4) = 1;
-                                BPi  = sub2ind([9 9],5,6);
-                                %change block BPs
-                                tablestate(editRow,1) = BPi;
-                                tablestate(editRow,3:4) = tabXY;
-                                tabapp.UITable.Data = tablestate;
-                            end
-                            
-                            % Cell 5 Pressed - E5
-                            if(tttapp.CellFiveVal == 1 && c(5) == 0)
-                                if (tttapp.Cell5Button.Text == tttapp.Player1)
-                                    oi = find(deckW.state==1,1);
-                                    tabXY = BP.deckW(oi,:);
-                                    TTTpickup(socket,tabXY,tttapp);
-                                    deckW.state(oi) = 0;
-                                    
-                                    ti = 5; % Cell 5
-                                    tabXY = BP.TTT(ti,:);
-                                    TTTdropoff(socket,tabXY,tttapp);
-                                    table.type(5,5) = deckW.type(oi);
-                                    table.theta(5,5) = deckW.theta(oi);
-                                    deckW.theta(oi) = NaN;
-                                    deckW.type(oi) = NaN;
-                                    editRow = find(tablestate(:,1)==oi+100,1);
-                                else
-                                    xi = find(deckE.state==1,1);
-                                    tabXY = BP.deckE(xi,:);
-                                    TTTpickup(socket,tabXY,tttapp);
-                                    deckE.state(xi) = 0;
-                                    
-                                    ti = 5; % Cell 5
-                                    tabXY = BP.TTT(ti,:);
-                                    TTTdropoff(socket,tabXY,tttapp);
-                                    table.type(5,5) = deckE.type(xi);
-                                    table.theta(5,5) = deckE.theta(xi);
-                                    deckE.theta(xi) = NaN;
-                                    deckE.type(xi) = NaN;
-                                    editRow = find(tablestate(:,1)==xi+200,1);
+                                
+                                % Cell 6 Pressed - E6
+                                if(tttapp.CellSixVal == 1 && c(6) == 0)
+                                    if (tttapp.Cell6Button.Text == tttapp.Player1)
+                                        oi = find(deckW.state==1,1);
+                                        tabXY = BP.deckW(oi,:);
+                                        TTTpickup(socket,tabXY,tttapp);
+                                        deckW.state(oi) = 0;
+                                        
+                                        ti = 6; % Cell 6
+                                        tabXY = BP.TTT(ti,:);
+                                        TTTdropoff(socket,tabXY,tttapp);
+                                        table.type(5,4) = deckW.type(oi);
+                                        table.theta(5,4) = deckW.theta(oi);
+                                        deckW.theta(oi) = NaN;
+                                        deckW.type(oi) = NaN;
+                                        editRow = find(tablestate(:,1)==oi+100,1);
+                                    else
+                                        xi = find(deckE.state==1,1);
+                                        tabXY = BP.deckE(xi,:);
+                                        TTTpickup(socket,tabXY,tttapp);
+                                        deckE.state(xi) = 0;
+                                        
+                                        ti = 6; % Cell 6
+                                        tabXY = BP.TTT(ti,:);
+                                        TTTdropoff(socket,tabXY,tttapp);
+                                        table.type(5,4) = deckE.type(xi);
+                                        table.theta(5,4) = deckE.theta(xi);
+                                        deckE.theta(xi) = NaN;
+                                        deckE.type(xi) = NaN;
+                                        editRow = find(tablestate(:,1)==xi+200,1);
+                                    end
+                                    board(5,4) = 1;
+                                    c(6) = 1;
+                                    BPi  = sub2ind([9 9],5,4);
+                                    %change block BPs
+                                    tablestate(editRow,1) = BPi;
+                                    tablestate(editRow,3:4) = tabXY;
+                                    tabapp.UITable.Data = tablestate;
                                 end
-                                board(5,5) = 1;
-                                c(5) = 1;
-                                BPi  = sub2ind([9 9],5,5);
-                                %change block BPs
-                                tablestate(editRow,1) = BPi;
-                                tablestate(editRow,3:4) = tabXY;
-                                tabapp.UITable.Data = tablestate;
-                            end
-                            
-                            % Cell 6 Pressed - E6
-                            if(tttapp.CellSixVal == 1 && c(6) == 0)
-                                if (tttapp.Cell6Button.Text == tttapp.Player1)
-                                    oi = find(deckW.state==1,1);
-                                    tabXY = BP.deckW(oi,:);
-                                    TTTpickup(socket,tabXY,tttapp);
-                                    deckW.state(oi) = 0;                                  
-                                    
-                                    ti = 6; % Cell 6
-                                    tabXY = BP.TTT(ti,:);
-                                    TTTdropoff(socket,tabXY,tttapp);
-                                    table.type(5,4) = deckW.type(oi);
-                                    table.theta(5,4) = deckW.theta(oi);
-                                    deckW.theta(oi) = NaN;
-                                    deckW.type(oi) = NaN;
-                                    editRow = find(tablestate(:,1)==oi+100,1);
-                                else
-                                    xi = find(deckE.state==1,1);
-                                    tabXY = BP.deckE(xi,:);
-                                    TTTpickup(socket,tabXY,tttapp);
-                                    deckE.state(xi) = 0;                                  
-                                    
-                                    ti = 6; % Cell 6
-                                    tabXY = BP.TTT(ti,:);
-                                    TTTdropoff(socket,tabXY,tttapp);
-                                    table.type(5,4) = deckE.type(xi);
-                                    table.theta(5,4) = deckE.theta(xi);
-                                    deckE.theta(xi) = NaN;
-                                    deckE.type(xi) = NaN;
-                                    editRow = find(tablestate(:,1)==xi+200,1);
+                                
+                                % Cell 7 Pressed - F4
+                                if(tttapp.CellSevenVal == 1 && c(7) == 0)
+                                    if (tttapp.Cell7Button.Text == tttapp.Player1)
+                                        oi = find(deckW.state==1,1);
+                                        tabXY = BP.deckW(oi,:);
+                                        TTTpickup(socket,tabXY,tttapp);
+                                        deckW.state(oi) = 0;
+                                        
+                                        ti = 7; % Cell 7
+                                        tabXY = BP.TTT(ti,:);
+                                        TTTdropoff(socket,tabXY,tttapp);
+                                        table.type(4,6) = deckW.type(oi);
+                                        table.theta(4,6) = deckW.theta(oi);
+                                        deckW.theta(oi) = NaN;
+                                        deckW.type(oi) = NaN;
+                                        editRow = find(tablestate(:,1)==oi+100,1);
+                                    else
+                                        xi = find(deckE.state==1,1);
+                                        tabXY = BP.deckE(xi,:);
+                                        TTTpickup(socket,tabXY,tttapp);
+                                        deckE.state(xi) = 0;
+                                        
+                                        ti = 7; % Cell 7
+                                        tabXY = BP.TTT(ti,:);
+                                        TTTdropoff(socket,tabXY,tttapp);
+                                        table.type(4,6) = deckE.type(xi);
+                                        table.theta(4,6) = deckE.theta(xi);
+                                        deckE.theta(xi) = NaN;
+                                        deckE.type(xi) = NaN;
+                                        editRow = find(tablestate(:,1)==xi+200,1);
+                                    end
+                                    board(4,6) = 1;
+                                    c(7) = 1;
+                                    BPi  = sub2ind([9 9],4,6);
+                                    %change block BPs
+                                    tablestate(editRow,1) = BPi;
+                                    tablestate(editRow,3:4) = tabXY;
+                                    tabapp.UITable.Data = tablestate;
                                 end
-                                board(5,4) = 1;
-                                c(6) = 1;
-                                BPi  = sub2ind([9 9],5,4);
-                                %change block BPs
-                                tablestate(editRow,1) = BPi;
-                                tablestate(editRow,3:4) = tabXY;
-                                tabapp.UITable.Data = tablestate;
-                            end
-                            
-                            % Cell 7 Pressed - F4
-                            if(tttapp.CellSevenVal == 1 && c(7) == 0)
-                                if (tttapp.Cell7Button.Text == tttapp.Player1)
-                                    oi = find(deckW.state==1,1);
-                                    tabXY = BP.deckW(oi,:);
-                                    TTTpickup(socket,tabXY,tttapp);
-                                    deckW.state(oi) = 0;                                    
-                                    
-                                    ti = 7; % Cell 7
-                                    tabXY = BP.TTT(ti,:);
-                                    TTTdropoff(socket,tabXY,tttapp);
-                                    table.type(4,6) = deckW.type(oi);
-                                    table.theta(4,6) = deckW.theta(oi);
-                                    deckW.theta(oi) = NaN;
-                                    deckW.type(oi) = NaN;
-                                    editRow = find(tablestate(:,1)==oi+100,1);
-                                else
-                                    xi = find(deckE.state==1,1);
-                                    tabXY = BP.deckE(xi,:);
-                                    TTTpickup(socket,tabXY,tttapp);
-                                    deckE.state(xi) = 0;                                    
-                                    
-                                    ti = 7; % Cell 7
-                                    tabXY = BP.TTT(ti,:);
-                                    TTTdropoff(socket,tabXY,tttapp);
-                                    table.type(4,6) = deckE.type(xi);
-                                    table.theta(4,6) = deckE.theta(xi);
-                                    deckE.theta(xi) = NaN;
-                                    deckE.type(xi) = NaN;
-                                    editRow = find(tablestate(:,1)==xi+200,1);
+                                
+                                % Cell 8 Pressed - F5
+                                if(tttapp.CellEightVal == 1 && c(8) == 0)
+                                    if (tttapp.Cell8Button.Text == tttapp.Player1)
+                                        oi = find(deckW.state==1,1);
+                                        tabXY = BP.deckW(oi,:);
+                                        TTTpickup(socket,tabXY,tttapp);
+                                        deckW.state(oi) = 0;
+                                        
+                                        ti = 8; % Cell 8
+                                        tabXY = BP.TTT(ti,:);
+                                        TTTdropoff(socket,tabXY,tttapp);
+                                        table.type(4,5) = deckW.type(oi);
+                                        table.theta(4,5) = deckW.theta(oi);
+                                        deckW.theta(oi) = NaN;
+                                        deckW.type(oi) = NaN;
+                                        editRow = find(tablestate(:,1)==oi+100,1);
+                                    else
+                                        xi = find(deckE.state==1,1);
+                                        tabXY = BP.deckE(xi,:);
+                                        TTTpickup(socket,tabXY,tttapp);
+                                        deckE.state(xi) = 0;
+                                        
+                                        ti = 8; % Cell 8
+                                        tabXY = BP.TTT(ti,:);
+                                        TTTdropoff(socket,tabXY,tttapp);
+                                        table.type(4,5) = deckE.type(xi);
+                                        table.theta(4,5) = deckE.theta(xi);
+                                        deckE.theta(xi) = NaN;
+                                        deckE.type(xi) = NaN;
+                                        editRow = find(tablestate(:,1)==xi+200,1);
+                                    end
+                                    board(4,5) = 1;
+                                    c(8) = 1;
+                                    BPi  = sub2ind([9 9],4,5);
+                                    %change block BPs
+                                    tablestate(editRow,1) = BPi;
+                                    tablestate(editRow,3:4) = tabXY;
+                                    tabapp.UITable.Data = tablestate;
                                 end
-                                board(4,6) = 1;
-                                c(7) = 1;
-                                BPi  = sub2ind([9 9],4,6);
-                                %change block BPs
-                                tablestate(editRow,1) = BPi;
-                                tablestate(editRow,3:4) = tabXY;
-                                tabapp.UITable.Data = tablestate;
-                            end
-                            
-                            % Cell 8 Pressed - F5
-                            if(tttapp.CellEightVal == 1 && c(8) == 0)
-                                if (tttapp.Cell8Button.Text == tttapp.Player1)
-                                    oi = find(deckW.state==1,1);
-                                    tabXY = BP.deckW(oi,:);
-                                    TTTpickup(socket,tabXY,tttapp);
-                                    deckW.state(oi) = 0;
-                                    
-                                    ti = 8; % Cell 8
-                                    tabXY = BP.TTT(ti,:);
-                                    TTTdropoff(socket,tabXY,tttapp);
-                                    table.type(4,5) = deckW.type(oi);
-                                    table.theta(4,5) = deckW.theta(oi);
-                                    deckW.theta(oi) = NaN;
-                                    deckW.type(oi) = NaN;
-                                    editRow = find(tablestate(:,1)==oi+100,1);
-                                else
-                                    xi = find(deckE.state==1,1);
-                                    tabXY = BP.deckE(xi,:);
-                                    TTTpickup(socket,tabXY,tttapp);
-                                    deckE.state(xi) = 0;
-                                    
-                                    ti = 8; % Cell 8
-                                    tabXY = BP.TTT(ti,:);
-                                    TTTdropoff(socket,tabXY,tttapp);
-                                    table.type(4,5) = deckE.type(xi);
-                                    table.theta(4,5) = deckE.theta(xi);
-                                    deckE.theta(xi) = NaN;
-                                    deckE.type(xi) = NaN;
-                                    editRow = find(tablestate(:,1)==xi+200,1);
+                                
+                                % Cell 9 Pressed - F6
+                                if(tttapp.CellNineVal == 1 && c(9) == 0)
+                                    if (tttapp.Cell9Button.Text == tttapp.Player1)
+                                        oi = find(deckW.state==1,1);
+                                        tabXY = BP.deckW(oi,:);
+                                        TTTpickup(socket,tabXY,tttapp);
+                                        deckW.state(oi) = 0;
+                                        
+                                        ti = 9; % Cell 9
+                                        tabXY = BP.TTT(ti,:);
+                                        TTTdropoff(socket,tabXY,tttapp);
+                                        table.type(4,4) = deckW.type(oi);
+                                        table.theta(4,4) = deckW.theta(oi);
+                                        deckW.theta(oi) = NaN;
+                                        deckW.type(oi) = NaN;
+                                        editRow = find(tablestate(:,1)==oi+100,1);
+                                    else
+                                        xi = find(deckE.state==1,1);
+                                        tabXY = BP.deckE(xi,:);
+                                        TTTpickup(socket,tabXY,tttapp);
+                                        deckE.state(xi) = 0;
+                                        
+                                        ti = 9; % Cell 9
+                                        tabXY = BP.TTT(ti,:);
+                                        TTTdropoff(socket,tabXY,tttapp);
+                                        table.type(4,4) = deckE.type(xi);
+                                        table.theta(4,4) = deckE.theta(xi);
+                                        deckE.theta(xi) = NaN;
+                                        deckE.type(xi) = NaN;
+                                        editRow = find(tablestate(:,1)==xi+200,1);
+                                    end
+                                    board(4,4) = 1;
+                                    c(9) = 1;
+                                    BPi  = sub2ind([9 9],4,4);
+                                    %change block BPs
+                                    tablestate(editRow,1) = BPi;
+                                    tablestate(editRow,3:4) = tabXY;
+                                    tabapp.UITable.Data = tablestate;
                                 end
-                                board(4,5) = 1;
-                                c(8) = 1;
-                                BPi  = sub2ind([9 9],4,5);
-                               %change block BPs
-                                tablestate(editRow,1) = BPi;
-                                tablestate(editRow,3:4) = tabXY;
-                                tabapp.UITable.Data = tablestate;
+                                pause(1);
                             end
-                            
-                            % Cell 9 Pressed - F6
-                            if(tttapp.CellNineVal == 1 && c(9) == 0)
-                                if (tttapp.Cell9Button.Text == tttapp.Player1)
-                                    oi = find(deckW.state==1,1);
-                                    tabXY = BP.deckW(oi,:);
-                                    TTTpickup(socket,tabXY,tttapp);
-                                    deckW.state(oi) = 0;                                   
-                                    
-                                    ti = 9; % Cell 9
-                                    tabXY = BP.TTT(ti,:);
-                                    TTTdropoff(socket,tabXY,tttapp);
-                                    table.type(4,4) = deckW.type(oi);
-                                    table.theta(4,4) = deckW.theta(oi);
-                                    deckW.theta(oi) = NaN;
-                                    deckW.type(oi) = NaN;
-                                    editRow = find(tablestate(:,1)==oi+100,1);
-                                else
-                                    xi = find(deckE.state==1,1);
-                                    tabXY = BP.deckE(xi,:);
-                                    TTTpickup(socket,tabXY,tttapp);
-                                    deckE.state(xi) = 0;
-                                    
-                                    ti = 9; % Cell 9
-                                    tabXY = BP.TTT(ti,:);
-                                    TTTdropoff(socket,tabXY,tttapp);
-                                    table.type(4,4) = deckE.type(xi);
-                                    table.theta(4,4) = deckE.theta(xi);
-                                    deckE.theta(xi) = NaN;
-                                    deckE.type(xi) = NaN;
-                                    editRow = find(tablestate(:,1)==xi+200,1);
-                                end
-                                board(4,4) = 1;
-                                c(9) = 1;
-                                BPi  = sub2ind([9 9],4,4);
-                                %change block BPs
-                                tablestate(editRow,1) = BPi;
-                                tablestate(editRow,3:4) = tabXY;
-                                tabapp.UITable.Data = tablestate;
-                            end
-                            pause(1);
                         end
-                    end
-                    tttapp.EndGameButtonPressed = 0;
-                    tttapp.EndGameButtonVal = 0;
-
-                    % Pack up blocks
-                    ti = sub2ind([9 9],[6 6 6 5 5 5 4 4 4],[6 5 4 6 5 4 6 5 4]); %D4
-                    tttType = table.type(ti);
-                    
-                    P1blocksi = find(tttType==0);
-                    
-                    if(~isempty(P1blocksi))
-                        P1XY = BP.TTT(P1blocksi,:);
-                        for i = 1:size(P1XY,1)
-                            
-                            [r,c] = ind2sub([3 3],P1blocksi(i));
-                            tabXY = P1XY(i,:);
-                            BPpickup(socket,tabXY);
-                            board((4-r)+3,(4-c)+3) = 0;
-                            
-                            freeoi = find(deckW.state==0,1);
-                            tabXY = BP.deckW(freeoi,:);
-                            BPdropoff(socket,tabXY);
-                            deckW.state(freeoi) = 1;
-                            
-                            %remove block from list
-                            BPi = sub2ind([9 9],(4-r)+3,(4-c)+3);
-                            editRow = find(tablestate(:,1)==BPi,1);
-                            tablestate(editRow,:) = [freeoi+100 table.type((4-r)+3,(4-c)+3) tabXY table.theta((4-r)+3,(4-c)+3)];
-                            tabapp.UITable.Data = tablestate;
-                            
-                            table.type((4-r)+3,(4-c)+3) = NaN;
-                            table.theta((4-r)+3,(4-c)+3) = NaN;
-                        end
-                    end
-                    
-                    P2blocksi = find(tttType==1);
-                    
-                    if(~isempty(P2blocksi))
-                        P2XY = BP.TTT(P2blocksi,:);
+                        tttapp.EndGameButtonPressed = 0;
+                        tttapp.EndGameButtonVal = 0;
                         
-                        for i = 1:size(P2XY,1)
-                            
-                            [r,c] = ind2sub([3 3],P2blocksi(i));
-                            tabXY = P2XY(i,:);
-                            BPpickup(socket,tabXY);
-                            board((4-r)+3,(4-c)+3) = 0;
-                            
-                            freexi = find(deckE.state==0,1);
-                            tabXY = BP.deckE(freexi,:);
-                            BPdropoff(socket,tabXY);
-                            deckE.state(freexi) = 1;
-                            
-                            %remove block from list
-                            BPi = sub2ind([9 9],(4-r)+3,(4-c)+3);
-                            editRow = find(tablestate(:,1)==BPi,1);
-                            tablestate(editRow,:) = [freexi+200 table.type((4-r)+3,(4-c)+3) tabXY table.theta((4-r)+3,(4-c)+3)];
-                            tabapp.UITable.Data = tablestate;
-                            
-                            table.type((4-r)+3,(4-c)+3) = NaN;
-                            table.theta((4-r)+3,(4-c)+3) = NaN;
+                        % Pack up blocks
+                        ti = sub2ind([9 9],[6 6 6 5 5 5 4 4 4],[6 5 4 6 5 4 6 5 4]); %D4
+                        tttType = table.type(ti);
+                        
+                        P1blocksi = find(tttType==0);
+                        
+                        if(~isempty(P1blocksi))
+                            P1XY = BP.TTT(P1blocksi,:);
+                            for i = 1:size(P1XY,1)
+                                
+                                [r,c] = ind2sub([3 3],P1blocksi(i));
+                                tabXY = P1XY(i,:);
+                                BPpickup(socket,tabXY);
+                                board((4-r)+3,(4-c)+3) = 0;
+                                
+                                freeoi = find(deckW.state==0,1);
+                                tabXY = BP.deckW(freeoi,:);
+                                BPdropoff(socket,tabXY);
+                                deckW.state(freeoi) = 1;
+                                
+                                %remove block from list
+                                BPi = sub2ind([9 9],(4-r)+3,(4-c)+3);
+                                editRow = find(tablestate(:,1)==BPi,1);
+                                tablestate(editRow,:) = [freeoi+100 table.type((4-r)+3,(4-c)+3) tabXY table.theta((4-r)+3,(4-c)+3)];
+                                tabapp.UITable.Data = tablestate;
+                                
+                                table.type((4-r)+3,(4-c)+3) = NaN;
+                                table.theta((4-r)+3,(4-c)+3) = NaN;
+                            end
                         end
+                        
+                        P2blocksi = find(tttType==1);
+                        
+                        if(~isempty(P2blocksi))
+                            P2XY = BP.TTT(P2blocksi,:);
+                            
+                            for i = 1:size(P2XY,1)
+                                
+                                [r,c] = ind2sub([3 3],P2blocksi(i));
+                                tabXY = P2XY(i,:);
+                                BPpickup(socket,tabXY);
+                                board((4-r)+3,(4-c)+3) = 0;
+                                
+                                freexi = find(deckE.state==0,1);
+                                tabXY = BP.deckE(freexi,:);
+                                BPdropoff(socket,tabXY);
+                                deckE.state(freexi) = 1;
+                                
+                                %remove block from list
+                                BPi = sub2ind([9 9],(4-r)+3,(4-c)+3);
+                                editRow = find(tablestate(:,1)==BPi,1);
+                                tablestate(editRow,:) = [freexi+200 table.type((4-r)+3,(4-c)+3) tabXY table.theta((4-r)+3,(4-c)+3)];
+                                tabapp.UITable.Data = tablestate;
+                                
+                                table.type((4-r)+3,(4-c)+3) = NaN;
+                                table.theta((4-r)+3,(4-c)+3) = NaN;
+                            end
+                        end
+                        tttapp.delete();
+                    else
+                        mvapp.StatusEditField_4.Value = "Decks are not sorted";
+                        pause(2);
                     end
-                    
-                    tttapp.delete();
                 else
-                   disp("Decks aren't full"); 
+                    mvapp.StatusEditField_4.Value = "Decks aren't full";
+                    pause(2);
                 end
+                mvapp.StatusEditField_4.Value = 'Ready';
                 mvapp.PvPButtonPressed = 0;
             end
             
@@ -1614,6 +1640,7 @@ function Ass3GUI2RAPID()
                 xi = sum(deckE.state);
                 
                 if(oi+xi==12)
+                    if(sum(deckW.type)==0 && sum(deckE.type)==6)
                     % Open TTT GUI
                     tttapp = TTTGUI();
                     pause(1);
@@ -2162,9 +2189,15 @@ function Ass3GUI2RAPID()
                         end
                     end
                     tttapp.delete;
+                    else
+                        mvapp.StatusEditField_4.Value = "Decks are not sorted";
+                        pause(2);
+                    end
                 else
-                    disp("Decks aren't full");
+                    mvapp.StatusEditField_4.Value = "Decks aren't full";
+                    pause(2);
                 end
+                mvapp.StatusEditField_4.Value = 'Ready';
                 mvapp.AIvPButtonPressed = 0;
             end
 
