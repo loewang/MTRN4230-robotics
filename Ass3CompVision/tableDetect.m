@@ -1,4 +1,4 @@
-function block = tableDetect(img)
+function block = tableDetect(img);
     tableImg = img;
 
     for i = 1:250 
@@ -46,8 +46,38 @@ function block = tableDetect(img)
     end
 
     block = dataAssociation(block, blockS);
+    szb = size(block);
+    
+    for i = 1:szb(1)
+        block(i,5) = (block(i,2)-286)/(55/36);
+        block(i,6) = (block(i,1)-798)/(55/36);
+    end
+   
+    for i = 1:szb(1)
+        text_str{i} = [num2str(round(block(i,4)))];
+    end
+
+    img = insertText(img,block(:,1:2),text_str,'FontSize',18,'BoxColor','red','BoxOpacity',1,'TextColor','white');
+
+    figure(1)
+    imshow(img);
+    hold on;
+
+    for  j = 1:szb(1)
+        if block(j,3)==1
+            plot(block(j,1), block(j,2), 'r*');
+            hold on;
+        else
+            plot(block(j,1), block(j,2), 'g*');
+            hold on;
+        end
+    end
     
 end
+
+
+
+% Supporting functions
 
 function block = dataAssociation(block, objCent)
     mindist = 100000;
@@ -78,8 +108,7 @@ function block = dataAssociation(block, objCent)
         for i = 1:length(newBlocks)
             block(end+1,1) = objCent(newBlocks(i),1);
             block(end,2) = objCent(newBlocks(i),2);
-            block(end,3) = 1;
-            block(end,4) = 0;                                
+            block(end,obj) = 1;
         end
 
     end
@@ -125,4 +154,15 @@ maskedRGBImage = RGB;
 % Set background pixels where BW is false to zero.
 maskedRGBImage(repmat(~BW,[1 1 3])) = 0;
 
+end
+
+
+function reach = isReachable(x, y)
+    if (((x - 805.84)^2) + ((y - 25.419)^2) > (832.67^2))
+        reach = 0;
+    else 
+        reach = 1;
+    end
+    
+    return
 end

@@ -1,4 +1,4 @@
-function block = tableAddBlock(img,block,ori,shape);
+function block = tableAddBlock(img,block,shape,ori);
 
     tableImg = img;
     
