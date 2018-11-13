@@ -1,20 +1,32 @@
 function rotateSuccessful = rotateCheck(blockData,tableData)
 
-% % example data: x, y, orientation, type
-% blockData = [28; 95; 5; 1];
-% tableData = [[0; 60; 90; 0],[30; 90; 0; 1],[25; -60; 30; 0],[45; -45; 60; 1]];
+% % example data: x, y, type, orientation
+% blockData = [34; 88; 1; 38];
+% tableData = [[0; 60; 0; 90],[30; 90; 1; 45],[25; -60; 0; -30],[45; -45; 1; 60]];
 
 blockData = blockData';
 tableData = tableData';
 
-blockXY = blockData(3);
-tableXY = tableData(:,3);
+blockXY = blockData(1:2);
+tableXY = tableData(:,1:2);
 
-% check if blockXY is member of tableXY, Check will either be 1 or 0
+blockOri = blockData(4);
+tableOri = tableData(:,4);
+
+% find block from table list
+[tableCheck,tableIndex] = ismembertol(blockXY,tableXY,5,'DataScale',1,'ByRows',true);
+
+% check block Ori is close to what its supposed to be, Check will either be 1 or 0
 % tolerance for orientation: 10 deg
-tableCheck = ismembertol(blockXY,tableXY,10,'DataScale',1,'ByRows',true);
+if tableCheck
+    oriCheck = ismembertol(blockOri,tableOri(tableIndex),10,'DataScale',1,'ByRows',true);
+else
+    % blockXY was not matched
+    rotateSuccessful = -1;
+    return;
+end
 
-if tableCheck 
+if oriCheck 
     rotateSuccessful = 1;
 else
     rotateSuccessful = 0;
